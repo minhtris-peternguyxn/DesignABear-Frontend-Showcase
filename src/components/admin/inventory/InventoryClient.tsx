@@ -89,7 +89,7 @@ export default function InventoryClient() {
           id: p.productId,
           name: p.name,
           sku: p.sku || "",
-          imageUrl: p.imageUrl,
+          imageUrl: p.imageUrl || undefined,
           productType: "BEAR", // Most products are bears, categories will refine later if needed
           isAccessory: false
         }));
@@ -103,7 +103,7 @@ export default function InventoryClient() {
           id: a.accessoryId,
           name: a.name,
           sku: a.sku || "",
-          imageUrl: a.imageUrl,
+          imageUrl: a.imageUrl || undefined,
           productType: "ACCESSORY",
           isAccessory: true
         }));
