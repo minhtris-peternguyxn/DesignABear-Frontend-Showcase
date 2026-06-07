@@ -8,57 +8,51 @@ import {
   IoColorPaletteOutline,
   IoWifiOutline,
   IoHeartOutline,
-  IoArrowForward,
 } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
-
-/* ────────────────────────────────────────────
-   Steps data
-   ──────────────────────────────────────────── */
-const STEPS = [
-  {
-    icon: IoSparklesOutline,
-    number: "01",
-    title: "Chọn gấu bông",
-    description:
-      "Chọn mẫu gấu bông yêu thích từ bộ sưu tập đa dạng của chúng tôi với nhiều kích thước và màu sắc.",
-    color: "#FF8C42",
-  },
-  {
-    icon: IoColorPaletteOutline,
-    number: "02",
-    title: "Tùy chỉnh cá nhân",
-    description:
-      "Chọn giọng nói, tính cách, và nội dung học tập phù hợp với độ tuổi và sở thích của bé.",
-    color: "#7C5CFC",
-  },
-  {
-    icon: IoWifiOutline,
-    number: "03",
-    title: "Kích hoạt AI & IoT",
-    description:
-      "Kết nối qua app, thiết lập nội dung và tính năng thông minh chỉ trong vài bước đơn giản.",
-    color: "#4ECDC4",
-  },
-  {
-    icon: IoHeartOutline,
-    number: "04",
-    title: "Tận hưởng cùng bé",
-    description:
-      "Gấu bông sẵn sàng đồng hành, dạy học, kể chuyện và lớn lên cùng con bạn mỗi ngày.",
-    color: "#FF6B9D",
-  },
-];
 
 /* ────────────────────────────────────────────
    Component
    ──────────────────────────────────────────── */
 export default function HowItWorks() {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const stepsRef = useRef<HTMLDivElement>(null);
   const triggersRef = useRef<ReturnType<typeof ScrollTrigger.create>[]>([]);
+
+  const STEPS = [
+    {
+      icon: IoSparklesOutline,
+      number: "01",
+      title: t.howItWorks.step1Title,
+      description: t.howItWorks.step1Desc,
+      color: "#FF8C42",
+    },
+    {
+      icon: IoColorPaletteOutline,
+      number: "02",
+      title: t.howItWorks.step2Title,
+      description: t.howItWorks.step2Desc,
+      color: "#7C5CFC",
+    },
+    {
+      icon: IoWifiOutline,
+      number: "03",
+      title: t.howItWorks.step3Title,
+      description: t.howItWorks.step3Desc,
+      color: "#4ECDC4",
+    },
+    {
+      icon: IoHeartOutline,
+      number: "04",
+      title: t.howItWorks.step4Title,
+      description: t.howItWorks.step4Desc,
+      color: "#FF6B9D",
+    },
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -72,7 +66,7 @@ export default function HowItWorks() {
     }
 
     if (headingRef.current) {
-      const t = ScrollTrigger.create({
+      const trig = ScrollTrigger.create({
         trigger: headingRef.current,
         start: "top 85%",
         once: true,
@@ -80,13 +74,13 @@ export default function HowItWorks() {
           gsap.to(headingRef.current, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" });
         },
       });
-      triggersRef.current.push(t);
+      triggersRef.current.push(trig);
     }
 
     if (stepsRef.current) {
       const steps = gsap.utils.toArray(stepsRef.current.children);
       steps.forEach((step, i) => {
-        const t = ScrollTrigger.create({
+        const trig = ScrollTrigger.create({
           trigger: step as Element,
           start: "top 88%",
           once: true,
@@ -98,12 +92,12 @@ export default function HowItWorks() {
             });
           },
         });
-        triggersRef.current.push(t);
+        triggersRef.current.push(trig);
       });
     }
 
     return () => {
-      triggersRef.current.forEach((t) => t.kill());
+      triggersRef.current.forEach((trig) => trig.kill());
       triggersRef.current = [];
     };
   }, []);
@@ -193,22 +187,24 @@ export default function HowItWorks() {
           <div className="flex items-center justify-center gap-4 mb-5">
             <div className="w-16 h-px bg-[#4ECDC4]"></div>
             <p className="text-[#4ECDC4] font-bold text-sm tracking-[0.2em] uppercase">
-              Hành trình tạo nên phép màu
+              {t.howItWorks.subtitle}
             </p>
             <div className="w-16 h-px bg-[#4ECDC4]"></div>
           </div>
 
           <h2 className="text-[#1A1A2E] font-black text-4xl sm:text-5xl md:text-6xl leading-tight mb-6">
-            Từ ý tưởng đến
+            {t.howItWorks.titleLine1}
             <br />
-            <span className="text-[#17409A]">người bạn thông minh</span>
+            <span className="text-[#17409A]">{t.howItWorks.titleLine2}</span>
           </h2>
 
           <p className="text-[#6B7280] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Mỗi chú gấu bông là một câu chuyện khởi đầu, một hành trình học tập
-            đầy cảm xúc.
-            <br />
-            Cùng khám phá cách chúng tôi biến ước mơ thành hiện thực.
+            {t.howItWorks.description.split("\n").map((line, i) => (
+              <span key={i}>
+                {line}
+                {i === 0 && <br />}
+              </span>
+            ))}
           </p>
         </div>
 
@@ -312,14 +308,14 @@ export default function HowItWorks() {
         <div className="text-center mt-20 md:mt-28">
           <div className="inline-flex flex-col items-center gap-6 bg-white rounded-3xl px-10 py-8 shadow-xl border border-gray-100">
             <p className="text-[#1A1A2E] text-xl md:text-2xl font-bold">
-              Hàng nghìn gia đình đã tin tưởng và lựa chọn Design a Bear
+              {t.howItWorks.ctaText}
             </p>
             <div className="flex items-center gap-8 text-[#6B7280] text-sm font-semibold">
-              <span>Uy tín</span>
+              <span>{t.howItWorks.trustBadge1}</span>
               <div className="w-1 h-1 rounded-full bg-[#6B7280]"></div>
-              <span>An toàn</span>
+              <span>{t.howItWorks.trustBadge2}</span>
               <div className="w-1 h-1 rounded-full bg-[#6B7280]"></div>
-              <span>Chất lượng</span>
+              <span>{t.howItWorks.trustBadge3}</span>
             </div>
           </div>
         </div>

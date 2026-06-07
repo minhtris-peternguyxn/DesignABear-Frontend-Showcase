@@ -4,59 +4,9 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { IoStarSharp } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
-
-/* ────────────────────────────────────────────
-   Reviews data
-   ──────────────────────────────────────────── */
-const REVIEWS = [
-  {
-    name: "Chị Nguyễn Thanh Hà",
-    role: "Mẹ bé Minh Anh (4 tuổi)",
-    rating: 5,
-    content:
-      "Con gái tôi rất thích chú gấu này! Bé có thể nói chuyện với gấu hàng giờ liền. Tôi rất yên tâm vì nội dung học tập rất phù hợp với độ tuổi của bé. Chất liệu mềm mại và an toàn tuyệt đối.",
-    avatar: "TH",
-    avatarColor: "#FF6B9D",
-  },
-  {
-    name: "Anh Trần Đức Minh",
-    role: "Bố bé Gia Bảo (6 tuổi)",
-    rating: 5,
-    content:
-      "Thằng bé nhà tôi vốn không thích đọc sách, nhưng khi có gấu kể chuyện, bé bắt đầu yêu thích việc học. Tính năng AI rất thông minh, phản hồi tự nhiên như người thật. Rất đáng đồng tiền!",
-    avatar: "ĐM",
-    avatarColor: "#4ECDC4",
-  },
-  {
-    name: "Chị Phạm Thu Trang",
-    role: "Mẹ bé Bảo Ngọc (3 tuổi)",
-    rating: 5,
-    content:
-      "Tôi đã mua 2 chú gấu cho 2 bé nhà mình. Mỗi bé có nội dung học tập khác nhau phù hợp với độ tuổi. App điều khiển rất dễ sử dụng. Bảo hành tốt, team hỗ trợ nhiệt tình.",
-    avatar: "TT",
-    avatarColor: "#7C5CFC",
-  },
-  {
-    name: "Anh Lê Văn Hùng",
-    role: "Bố bé Phương Anh (5 tuổi)",
-    rating: 5,
-    content:
-      "Sản phẩm vượt xa mong đợi của tôi. Con gái tôi giờ đây có người bạn đồng hành thực sự. Gấu có thể trả lời mọi câu hỏi của bé một cách thông minh và dễ hiểu. Quá tuyệt vời!",
-    avatar: "VH",
-    avatarColor: "#FF8C42",
-  },
-  {
-    name: "Chị Võ Thị Mai",
-    role: "Mẹ bé Quốc Bảo (7 tuổi)",
-    rating: 5,
-    content:
-      "Thiết kế rất đẹp và chất lượng cao cấp. Bé nhà tôi học được rất nhiều điều bổ ích qua những câu chuyện mà gấu kể. Dịch vụ chăm sóc khách hàng xuất sắc, hỗ trợ tận tình.",
-    avatar: "TM",
-    avatarColor: "#8B5CF6",
-  },
-];
 
 /* ────────────────────────────────────────────
    Paw Print SVG Component
@@ -102,11 +52,55 @@ function Stars({ count }: { count: number }) {
    Component
    ──────────────────────────────────────────── */
 export default function Testimonials() {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const triggersRef = useRef<ReturnType<typeof ScrollTrigger.create>[]>([]);
+
+  const REVIEWS = [
+    {
+      name: t.testimonials.review1Name,
+      role: t.testimonials.review1Role,
+      rating: 5,
+      content: t.testimonials.review1Content,
+      avatar: "TH",
+      avatarColor: "#FF6B9D",
+    },
+    {
+      name: t.testimonials.review2Name,
+      role: t.testimonials.review2Role,
+      rating: 5,
+      content: t.testimonials.review2Content,
+      avatar: "ĐM",
+      avatarColor: "#4ECDC4",
+    },
+    {
+      name: t.testimonials.review3Name,
+      role: t.testimonials.review3Role,
+      rating: 5,
+      content: t.testimonials.review3Content,
+      avatar: "TT",
+      avatarColor: "#7C5CFC",
+    },
+    {
+      name: t.testimonials.review4Name,
+      role: t.testimonials.review4Role,
+      rating: 5,
+      content: t.testimonials.review4Content,
+      avatar: "VH",
+      avatarColor: "#FF8C42",
+    },
+    {
+      name: t.testimonials.review5Name,
+      role: t.testimonials.review5Role,
+      rating: 5,
+      content: t.testimonials.review5Content,
+      avatar: "TM",
+      avatarColor: "#8B5CF6",
+    },
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -116,7 +110,7 @@ export default function Testimonials() {
     if (carouselRef.current) gsap.set(carouselRef.current, { y: 20, opacity: 0 });
 
     if (headingRef.current) {
-      const t = ScrollTrigger.create({
+      const trig = ScrollTrigger.create({
         trigger: headingRef.current,
         start: "top 85%",
         once: true,
@@ -124,11 +118,11 @@ export default function Testimonials() {
           gsap.to(headingRef.current, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" });
         },
       });
-      triggersRef.current.push(t);
+      triggersRef.current.push(trig);
     }
 
     if (carouselRef.current) {
-      const t = ScrollTrigger.create({
+      const trig = ScrollTrigger.create({
         trigger: carouselRef.current,
         start: "top 80%",
         once: true,
@@ -136,11 +130,11 @@ export default function Testimonials() {
           gsap.to(carouselRef.current, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" });
         },
       });
-      triggersRef.current.push(t);
+      triggersRef.current.push(trig);
     }
 
     return () => {
-      triggersRef.current.forEach((t) => t.kill());
+      triggersRef.current.forEach((trig) => trig.kill());
       triggersRef.current = [];
     };
   }, []);
@@ -167,7 +161,7 @@ export default function Testimonials() {
     return () => {
       tl.kill();
     };
-  }, []);
+  }, [REVIEWS.length]);
 
   return (
     <section
@@ -223,17 +217,16 @@ export default function Testimonials() {
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="w-16 h-px bg-[#17409A]/20" />
             <p className="text-[#17409A] font-bold text-sm tracking-widest uppercase">
-              Phụ huynh nói gì
+              {t.testimonials.subtitle}
             </p>
             <div className="w-16 h-px bg-[#17409A]/20" />
           </div>
           <h2 className="text-[#1A1A2E] font-black text-5xl sm:text-6xl md:text-7xl leading-tight mb-6">
-            Niềm tin từ{" "}
-            <span className="text-[#17409A]">hàng nghìn gia đình</span>
+            {t.testimonials.titleLine1}{" "}
+            <span className="text-[#17409A]">{t.testimonials.titleLine2}</span>
           </h2>
           <p className="text-[#6B7280] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Hơn 10.000 gia đình đã chọn Design a Bear làm người bạn đồng hành
-            cho con yêu
+            {t.testimonials.description}
           </p>
         </div>
 
@@ -310,7 +303,7 @@ export default function Testimonials() {
               10,000+
             </div>
             <div className="text-[#6B7280] font-semibold text-sm md:text-base">
-              Gia đình tin tưởng
+              {t.testimonials.statFamilies}
             </div>
           </div>
           <div className="hidden md:block w-px h-16 bg-[#17409A]/20" />
@@ -319,7 +312,7 @@ export default function Testimonials() {
               4.9/5
             </div>
             <div className="text-[#6B7280] font-semibold text-sm md:text-base">
-              Đánh giá trung bình
+              {t.testimonials.statRating}
             </div>
           </div>
           <div className="hidden md:block w-px h-16 bg-[#17409A]/20" />
@@ -328,7 +321,7 @@ export default function Testimonials() {
               98%
             </div>
             <div className="text-[#6B7280] font-semibold text-sm md:text-base">
-              Hài lòng & giới thiệu
+              {t.testimonials.statSatisfied}
             </div>
           </div>
         </div>

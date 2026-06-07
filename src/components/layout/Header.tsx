@@ -21,6 +21,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { useFavorite } from "@/contexts/FavoriteContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { productService } from "@/services/product.service";
 import { ProductListItem } from "@/types";
 
@@ -34,6 +35,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems, openCart } = useCart();
   const { favorites, openFavorites } = useFavorite();
+  const { locale, setLocale, t } = useLanguage();
   const favoriteCount = favorites.size;
   const router = useRouter();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -264,6 +266,39 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
     }
   }, [showMobileMenu]);
 
+  /* ── Language Toggle Component ── */
+  const LanguageToggle = ({ className = "" }: { className?: string }) => (
+    <div
+      className={`relative flex items-center bg-gray-100 rounded-full p-0.5 cursor-pointer select-none ${className}`}
+      style={{ fontFamily: "'Nunito', sans-serif" }}
+    >
+      <button
+        onClick={() => setLocale("vi")}
+        className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+          locale === "vi"
+            ? "bg-[#17409A] text-white shadow-md"
+            : "text-gray-500 hover:text-gray-700"
+        }`}
+        aria-label="Tiếng Việt"
+      >
+        <span className="text-sm leading-none">🇻🇳</span>
+        <span>VI</span>
+      </button>
+      <button
+        onClick={() => setLocale("en")}
+        className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-300 ${
+          locale === "en"
+            ? "bg-[#17409A] text-white shadow-md"
+            : "text-gray-500 hover:text-gray-700"
+        }`}
+        aria-label="English"
+      >
+        <span className="text-sm leading-none">🇺🇸</span>
+        <span>EN</span>
+      </button>
+    </div>
+  );
+
   return (
     <>
       <header
@@ -277,7 +312,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
             <button
               onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="md:hidden text-gray-800 hover:text-blue-600 transition-all duration-300"
-              aria-label="Menu"
+              aria-label={t.header.menu}
             >
               <IoMenuOutline className="text-3xl" />
             </button>
@@ -290,7 +325,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                 onMouseLeave={scheduleClose}
               >
                 <button className="flex items-center gap-1 text-gray-800 hover:text-blue-600 transition-colors font-medium">
-                  Mua sắm
+                  {t.header.shop}
                   <IoChevronDown
                     className={`text-base transition-transform duration-300 ${activeDropdown === "shop" ? "rotate-180" : ""}`}
                   />
@@ -308,19 +343,19 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                       href="/products"
                       className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                     >
-                      Tất cả sản phẩm
+                      {t.header.allProducts}
                     </Link>
                     <Link
                       href="/products?category=bear"
                       className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                     >
-                      Gấu bông
+                      {t.header.bears}
                     </Link>
                     <Link
                       href="/products?category=accessory"
                       className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                     >
-                      Phụ kiện
+                      {t.header.accessories}
                     </Link>
                   </div>
                 )}
@@ -333,7 +368,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                   onMouseLeave={scheduleClose}
                 >
                   <button className="flex items-center gap-1 text-gray-800 hover:text-blue-600 transition-colors font-medium">
-                    Bộ sưu tập
+                    {t.header.collections}
                     <IoChevronDown
                       className={`text-base transition-transform duration-300 ${activeDropdown === "collection" ? "rotate-180" : ""}`}
                     />
@@ -351,25 +386,25 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                         href="/collections"
                         className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-bold text-sm transition-colors rounded-xl mx-1 border-b border-gray-50 mb-1"
                       >
-                        Tất cả bộ sưu tập
+                        {t.header.allCollections}
                       </Link>
                       <Link
                         href="/collections/spring"
                         className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                       >
-                        Bộ sưu tập xuân
+                        {t.header.springCollection}
                       </Link>
                       <Link
                         href="/collections/summer"
                         className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                       >
-                        Bộ sưu tập hè
+                        {t.header.summerCollection}
                       </Link>
                       <Link
                         href="/collections/special"
                         className="block px-4 py-2.5 hover:bg-[#F4F7FF] text-gray-800 hover:text-[#17409A] font-semibold text-sm transition-colors rounded-xl mx-1"
                       >
-                        Phiên bản đặc biệt
+                        {t.header.specialEdition}
                       </Link>
                     </div>
                   )}
@@ -380,14 +415,14 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                 href="/story"
                 className="text-gray-800 hover:text-blue-600 transition-colors font-medium"
               >
-                Câu chuyện
+                {t.header.story}
               </Link>
 
               <Link
                 href="/connect"
                 className="text-gray-800 hover:text-blue-600 transition-colors font-medium"
               >
-                Kết nối
+                {t.header.connect}
               </Link>
             </div>
 
@@ -409,6 +444,11 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
 
             {/* Right Icons */}
             <div className="flex items-center gap-3 md:gap-6">
+              {/* Language Toggle - Desktop Only */}
+              <div className="hidden md:block">
+                <LanguageToggle />
+              </div>
+
               {/* Search Section - Desktop Only */}
               <div className="hidden md:flex items-center">
                 <div
@@ -423,7 +463,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Tìm kiếm gấu bông của bạn..."
+                      placeholder={t.header.searchPlaceholder}
                       className="flex-1 bg-transparent outline-none ml-3 text-gray-800 placeholder-gray-500 text-sm w-80 font-medium"
                       onKeyDown={(e) => {
                         if (e.key === "Escape") {
@@ -447,7 +487,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                         setShowResults(false);
                       }}
                       className="ml-2 text-gray-500 hover:text-gray-700 transition-colors shrink-0 p-1 hover:bg-gray-200 rounded-full"
-                      aria-label="Đóng"
+                      aria-label={t.header.close}
                     >
                       <IoCloseOutline className="text-xl" />
                     </button>
@@ -470,7 +510,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                         ) : searchResults.length > 0 ? (
                           <>
                             <div className="px-3 py-2 text-[11px] font-black uppercase tracking-wider text-gray-400">
-                              Sản phẩm gợi ý
+                              {t.header.suggestedProducts}
                             </div>
                             <div className="space-y-1">
                               {searchResults.map((product) => (
@@ -512,11 +552,11 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                                         fontFamily: "'Fredoka', sans-serif",
                                       }}
                                     >
-                                      Từ{" "}
+                                      {t.header.from}{" "}
                                       {product.minPrice?.toLocaleString(
-                                        "vi-VN",
+                                        locale === "vi" ? "vi-VN" : "en-US",
                                       )}
-                                      ₫
+                                      {locale === "vi" ? "₫" : " VND"}
                                     </p>
                                   </div>
                                   <IoBagOutline className="text-gray-300 group-hover:text-blue-600 transition-colors text-lg mr-2" />
@@ -531,14 +571,14 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                               }}
                               className="block w-full text-center py-3 mt-2 text-sm font-black text-[#17409A] hover:bg-[#17409A]/5 transition-colors border-t border-gray-50"
                             >
-                              Xem tất cả kết quả
+                              {t.header.viewAllResults}
                             </Link>
                           </>
                         ) : (
                           <div className="py-10 text-center">
                             <IoSearchOutline className="text-4xl text-gray-200 mx-auto mb-3" />
                             <p className="text-gray-500 font-bold text-sm">
-                              Không tìm thấy chú gấu nào phù hợp
+                              {t.header.noResults}
                             </p>
                           </div>
                         )}
@@ -551,7 +591,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                   ref={searchButtonRef}
                   onClick={() => setShowSearch(!showSearch)}
                   className="text-gray-800 hover:text-blue-600 transition-all duration-300 hover:scale-110 shrink-0"
-                  aria-label="Tìm kiếm"
+                  aria-label={t.header.search}
                 >
                   <IoSearchOutline className="text-2xl" />
                 </button>
@@ -561,7 +601,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
               <button
                 onClick={openFavorites}
                 className="hidden sm:block text-gray-800 hover:text-blue-600 transition-all duration-300 hover:scale-110 relative"
-                aria-label="Yêu thích"
+                aria-label={t.header.favorites}
               >
                 <IoHeartOutline className="text-2xl" />
                 {favoriteCount > 0 && (
@@ -578,7 +618,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
               <button
                 onClick={openCart}
                 className="text-gray-800 hover:text-blue-600 transition-all duration-300 hover:scale-110 relative"
-                aria-label="Giỏ hàng"
+                aria-label={t.header.cart}
               >
                 <IoBagOutline className="text-2xl" />
                 {totalItems > 0 && (
@@ -598,7 +638,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                     ref={userBtnRef}
                     onClick={() => setShowUserMenu((v) => !v)}
                     className="flex items-center justify-center w-9 h-9 rounded-full bg-[#17409A]/10 hover:bg-[#17409A]/20 transition-colors"
-                    aria-label="Tài khoản"
+                    aria-label={t.header.account}
                   >
                     {user?.avatar ? (
                       <img
@@ -645,7 +685,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F7FF] text-sm font-bold text-[#1A1A2E] hover:text-[#17409A] transition-colors"
                         >
                           <IoPersonOutline className="text-base text-[#17409A]" />
-                          Hồ sơ cá nhân
+                          {t.header.profile}
                         </Link>
                         <Link
                           href="/profile?tab=orders"
@@ -653,7 +693,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F7FF] text-sm font-bold text-[#1A1A2E] hover:text-[#17409A] transition-colors"
                         >
                           <IoBagOutline className="text-base text-[#17409A]" />
-                          Đơn hàng
+                          {t.header.orders}
                         </Link>
                         <button
                           onClick={() => {
@@ -663,7 +703,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#F4F7FF] text-sm font-bold text-[#1A1A2E] hover:text-[#17409A] transition-colors text-left"
                         >
                           <IoHeartOutline className="text-base text-[#FF6B9D]" />
-                          Yêu thích
+                          {t.header.favorites}
                         </button>
                         <Link
                           href="/profile?tab=reviews"
@@ -671,7 +711,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F7FF] text-sm font-bold text-[#1A1A2E] hover:text-[#17409A] transition-colors"
                         >
                           <IoStarOutline className="text-base text-[#FFD93D]" />
-                          Đánh giá
+                          {t.header.reviews}
                         </Link>
                         <Link
                           href="/profile?tab=security"
@@ -679,7 +719,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F4F7FF] text-sm font-bold text-[#1A1A2E] hover:text-[#17409A] transition-colors"
                         >
                           <IoShieldCheckmarkOutline className="text-base text-[#4ECDC4]" />
-                          Bảo mật
+                          {t.header.security}
                         </Link>
                       </div>
 
@@ -694,7 +734,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                           className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[#FF6B9D]/8 text-sm font-bold text-[#FF6B9D] transition-colors"
                         >
                           <IoLogOutOutline className="text-base" />
-                          Đăng xuất
+                          {t.header.logout}
                         </button>
                       </div>
                     </div>
@@ -703,7 +743,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
               ) : (
                 <Link href="/auth">
                   <button className="hidden sm:block bg-[#17409A] text-white px-6 py-2.5 rounded-2xl font-bold text-sm hover:bg-[#0f2d6e] transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 whitespace-nowrap">
-                    Mua ngay
+                    {t.header.buyNow}
                   </button>
                 </Link>
               )}
@@ -737,13 +777,16 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
               className="object-contain"
             />
           </Link>
-          <button
-            onClick={() => setShowMobileMenu(false)}
-            className="text-gray-800 hover:text-blue-600 transition-colors"
-            aria-label="Đóng menu"
-          >
-            <IoCloseOutline className="text-3xl" />
-          </button>
+          <div className="flex items-center gap-3">
+            <LanguageToggle />
+            <button
+              onClick={() => setShowMobileMenu(false)}
+              className="text-gray-800 hover:text-blue-600 transition-colors"
+              aria-label={t.header.closeMenu}
+            >
+              <IoCloseOutline className="text-3xl" />
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu Navigation */}
@@ -758,7 +801,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
               }
               className="flex items-center justify-between w-full text-gray-800 font-bold text-lg"
             >
-              Mua sắm
+              {t.header.shop}
               <IoChevronDown
                 className={`text-xl transition-transform duration-300 ${
                   activeDropdown === "shop-mobile" ? "rotate-180" : ""
@@ -772,21 +815,21 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                   onClick={() => setShowMobileMenu(false)}
                   className="block text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  Tất cả sản phẩm
+                  {t.header.allProducts}
                 </Link>
                 <Link
                   href="/products?category=bear"
                   onClick={() => setShowMobileMenu(false)}
                   className="block text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  Gấu bông
+                  {t.header.bears}
                 </Link>
                 <Link
                   href="/products?category=accessory"
                   onClick={() => setShowMobileMenu(false)}
                   className="block text-gray-600 hover:text-blue-600 transition-colors"
                 >
-                  Phụ kiện
+                  {t.header.accessories}
                 </Link>
               </div>
             )}
@@ -805,7 +848,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                 }
                 className="flex items-center justify-between w-full text-gray-800 font-bold text-lg"
               >
-                Bộ sưu tập
+                {t.header.collections}
                 <IoChevronDown
                   className={`text-xl transition-transform duration-300 ${
                     activeDropdown === "collection-mobile" ? "rotate-180" : ""
@@ -819,28 +862,28 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                     onClick={() => setShowMobileMenu(false)}
                     className="block text-gray-800 font-bold hover:text-blue-600 transition-colors"
                   >
-                    Tất cả bộ sưu tập
+                    {t.header.allCollections}
                   </Link>
                   <Link
                     href="/collections/spring"
                     onClick={() => setShowMobileMenu(false)}
                     className="block text-gray-600 hover:text-blue-600 transition-colors"
                   >
-                    Bộ sưu tập xuân
+                    {t.header.springCollection}
                   </Link>
                   <Link
                     href="/collections/summer"
                     onClick={() => setShowMobileMenu(false)}
                     className="block text-gray-600 hover:text-blue-600 transition-colors"
                   >
-                    Bộ sưu tập hè
+                    {t.header.summerCollection}
                   </Link>
                   <Link
                     href="/collections/special"
                     onClick={() => setShowMobileMenu(false)}
                     className="block text-gray-600 hover:text-blue-600 transition-colors"
                   >
-                    Phiên bản đặc biệt
+                    {t.header.specialEdition}
                   </Link>
                 </div>
               )}
@@ -853,7 +896,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
             onClick={() => setShowMobileMenu(false)}
             className="block text-gray-800 font-bold text-lg hover:text-blue-600 transition-colors"
           >
-            Câu chuyện
+            {t.header.story}
           </Link>
 
           <Link
@@ -861,7 +904,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
             onClick={() => setShowMobileMenu(false)}
             className="block text-gray-800 font-bold text-lg hover:text-blue-600 transition-colors"
           >
-            Kết nối
+            {t.header.connect}
           </Link>
 
           {/* Divider */}
@@ -873,7 +916,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                 className="flex items-center gap-3 text-gray-800 hover:text-blue-600 transition-colors mb-4"
               >
                 <IoPersonOutline className="text-2xl" />
-                <span className="font-medium">Tài khoản</span>
+                <span className="font-medium">{t.header.account}</span>
               </Link>
             ) : (
               <Link
@@ -882,7 +925,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                 className="block mb-4"
               >
                 <button className="w-full bg-[#17409A] text-white px-6 py-3 rounded-2xl font-bold text-base hover:bg-[#0f2d6e] transition-all duration-300">
-                  Mua ngay
+                  {t.header.buyNow}
                 </button>
               </Link>
             )}
@@ -904,7 +947,7 @@ export default function Header({ hideOnHero = false }: HeaderProps) {
                   </span>
                 )}
               </div>
-              <span className="font-medium">Yêu thích</span>
+              <span className="font-medium">{t.header.favorites}</span>
             </button>
           </div>
         </nav>

@@ -1,32 +1,34 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import gsap from "gsap";
-
-const STORY_PHASES = [
-  {
-    label: "CÂU CHUYỆN KHỞI ĐẦU",
-    heading: "Mỗi Chú Gấu Bông Mang Một Sứ Mệnh Yêu Thương",
-    subtext: "Không chỉ là một món đồ chơi thông thường, đó là người bạn đầu đời tuyệt vời nhất của bé.",
-  },
-  {
-    label: "HÀNH TRÌNH GẮN KẾT",
-    heading: "Sự Kết Hợp Hoàn Hảo Giữa Công Nghệ & Trái Tim",
-    subtext: "Trí tuệ nhân tạo hiện đại hòa quyện cùng sự mềm mại ấm áp, biết lắng nghe và sẻ chia.",
-  },
-  {
-    label: "TẠO NÊN KỶ NIỆM",
-    heading: "Thiết Kế Người Bạn Tri Kỷ Cho Bé Ngay Hôm Nay",
-    subtext: "Cá nhân hóa từ màu sắc, giọng nói đến những bài học kỳ diệu để bé lớn khôn mỗi ngày.",
-    cta: { label: "Tạo Gấu Ngay", href: "/products" },
-  },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function HeroSection() {
+  const { t } = useLanguage();
   const [phaseIndex, setPhaseIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+
+  const STORY_PHASES = useMemo(() => [
+    {
+      label: t.hero.phase1Label,
+      heading: t.hero.phase1Heading,
+      subtext: t.hero.phase1Subtext,
+    },
+    {
+      label: t.hero.phase2Label,
+      heading: t.hero.phase2Heading,
+      subtext: t.hero.phase2Subtext,
+    },
+    {
+      label: t.hero.phase3Label,
+      heading: t.hero.phase3Heading,
+      subtext: t.hero.phase3Subtext,
+      cta: { label: t.hero.phase3Cta, href: "/products" },
+    },
+  ], [t]);
 
   const current = STORY_PHASES[phaseIndex];
   const headingWords = current.heading.split(/\s+/).filter(Boolean);
@@ -84,7 +86,7 @@ export default function HeroSection() {
       ctx.revert();
       clearTimeout(timer);
     };
-  }, [phaseIndex]);
+  }, [phaseIndex, STORY_PHASES]);
 
   return (
     <section
@@ -187,7 +189,7 @@ export default function HeroSection() {
                   }
                 }}
                 className="relative flex items-center justify-center p-2 cursor-pointer group"
-                aria-label={`Chuyển tới phần ${idx + 1}`}
+                aria-label={`${t.hero.goToPhase} ${idx + 1}`}
               >
                 <span 
                   className={`block h-3 rounded-full transition-all duration-300 ${

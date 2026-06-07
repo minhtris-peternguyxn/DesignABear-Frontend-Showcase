@@ -10,49 +10,51 @@ import {
   IoBulbOutline, 
   IoPhonePortraitOutline,
 } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Register ScrollTrigger
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-const LEFT_FEATURES = [
-  {
-    title: "Trò chuyện AI thông minh",
-    description: "Nhận diện giọng nói và trò chuyện tự nhiên như một người bạn thực thụ, giúp bé tự tin giao tiếp.",
-    icon: IoChatbubblesOutline,
-    color: "#FF8C42" // Warm Orange
-  },
-  {
-    title: "Học tập tương tác",
-    description: "Cùng bé học tiếng Anh, làm toán cơ bản và kiên nhẫn trả lời hàng vạn câu hỏi 'Vì sao?'.",
-    icon: IoBulbOutline,
-    color: "#4ECDC4" // Mint Green
-  }
-];
-
-const RIGHT_FEATURES = [
-  {
-    title: "Kể chuyện & Hát ru",
-    description: "Kho tàng hàng ngàn câu chuyện cổ tích và bài hát ru êm dịu, mang đến cho bé giấc mơ đẹp.",
-    icon: IoBookOutline,
-    color: "#7C5CFC" // Purple
-  },
-  {
-    title: "Kết nối gia đình từ xa",
-    description: "Ba mẹ gửi lời nhắn yêu thương từ ứng dụng và phát trực tiếp qua gấu bông cho bé nghe.",
-    icon: IoPhonePortraitOutline,
-    color: "#FF6B9D" // Pink
-  }
-];
-
 export default function FeaturesSection() {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const bearRef = useRef<HTMLDivElement>(null);
   const leftCardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const rightCardsRef = useRef<(HTMLDivElement | null)[]>([]);
   const triggersRef = useRef<ReturnType<typeof ScrollTrigger.create>[]>([]);
+
+  const LEFT_FEATURES = [
+    {
+      title: t.features.left1Title,
+      description: t.features.left1Desc,
+      icon: IoChatbubblesOutline,
+      color: "#FF8C42" // Warm Orange
+    },
+    {
+      title: t.features.left2Title,
+      description: t.features.left2Desc,
+      icon: IoBulbOutline,
+      color: "#4ECDC4" // Mint Green
+    }
+  ];
+
+  const RIGHT_FEATURES = [
+    {
+      title: t.features.right1Title,
+      description: t.features.right1Desc,
+      icon: IoBookOutline,
+      color: "#7C5CFC" // Purple
+    },
+    {
+      title: t.features.right2Title,
+      description: t.features.right2Desc,
+      icon: IoPhonePortraitOutline,
+      color: "#FF6B9D" // Pink
+    }
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -203,19 +205,18 @@ export default function FeaturesSection() {
           <div className="flex items-center justify-center gap-4 mb-5">
             <div className="w-16 h-px bg-[#FF8C42]"></div>
             <p className="text-[#FF8C42] font-bold text-sm tracking-[0.2em] uppercase">
-              Khám Phá Sức Mạnh
+              {t.features.subtitle}
             </p>
             <div className="w-16 h-px bg-[#FF8C42]"></div>
           </div>
 
           <h2 className="text-[#1A1A2E] font-black text-4xl sm:text-5xl md:text-6xl leading-tight mb-6">
-            Chú Gấu Của Bé <br className="hidden md:block" /> 
-            <span className="text-[#17409A]">Sẽ Làm Được Những Gì?</span>
+            {t.features.titleLine1} <br className="hidden md:block" /> 
+            <span className="text-[#17409A]">{t.features.titleLine2}</span>
           </h2>
 
           <p className="text-[#6B7280] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Hơn cả một món đồ chơi nhồi bông, Smart Bear được tích hợp công nghệ AI tiên tiến, 
-            sẵn sàng đồng hành cùng bé trong mọi khoảnh khắc vui chơi và học tập.
+            {t.features.description}
           </p>
         </div>
 

@@ -6,41 +6,9 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { IoArrowForward } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
-
-/* ────────────────────────────────────────────
-   Collections data
-   ──────────────────────────────────────────── */
-const COLLECTIONS = [
-  {
-    id: "explorer",
-    title: "Bộ sưu tập Nhà Khám Phá",
-    description: "Dành cho những bé yêu khoa học và tự nhiên",
-    image: "/teddy_bear.png",
-    color: "#4ECDC4",
-    href: "/collections/explorer",
-    large: true,
-  },
-  {
-    id: "storyteller",
-    title: "Bộ sưu tập Kể Chuyện",
-    description: "Hàng nghìn câu chuyện cổ tích tương tác",
-    image: "/teddy_bear.png",
-    color: "#7C5CFC",
-    href: "/collections/storyteller",
-    large: false,
-  },
-  {
-    id: "musician",
-    title: "Bộ sưu tập Âm Nhạc",
-    description: "Dạy bé yêu âm nhạc từ nhỏ",
-    image: "/teddy_bear.png",
-    color: "#FF6B9D",
-    href: "/collections/musician",
-    large: false,
-  },
-];
 
 /* ────────────────────────────────────────────
    Paw Print SVG Component
@@ -73,10 +41,41 @@ const PawPrint = ({
    Component
    ──────────────────────────────────────────── */
 export default function Collections() {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const triggersRef = useRef<ReturnType<typeof ScrollTrigger.create>[]>([]);
+
+  const COLLECTIONS = [
+    {
+      id: "explorer",
+      title: t.collections.explorerTitle,
+      description: t.collections.explorerDesc,
+      image: "/teddy_bear.png",
+      color: "#4ECDC4",
+      href: "/collections/explorer",
+      large: true,
+    },
+    {
+      id: "storyteller",
+      title: t.collections.storytellerTitle,
+      description: t.collections.storytellerDesc,
+      image: "/teddy_bear.png",
+      color: "#7C5CFC",
+      href: "/collections/storyteller",
+      large: false,
+    },
+    {
+      id: "musician",
+      title: t.collections.musicianTitle,
+      description: t.collections.musicianDesc,
+      image: "/teddy_bear.png",
+      color: "#FF6B9D",
+      href: "/collections/musician",
+      large: false,
+    },
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -86,7 +85,7 @@ export default function Collections() {
     if (cardsRef.current) gsap.set(cardsRef.current.children, { y: 20, opacity: 0 });
 
     if (headingRef.current) {
-      const t = ScrollTrigger.create({
+      const trig = ScrollTrigger.create({
         trigger: headingRef.current,
         start: "top 85%",
         once: true,
@@ -94,11 +93,11 @@ export default function Collections() {
           gsap.to(headingRef.current, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" });
         },
       });
-      triggersRef.current.push(t);
+      triggersRef.current.push(trig);
     }
 
     if (cardsRef.current) {
-      const t = ScrollTrigger.create({
+      const trig = ScrollTrigger.create({
         trigger: cardsRef.current,
         start: "top 80%",
         once: true,
@@ -108,11 +107,11 @@ export default function Collections() {
           });
         },
       });
-      triggersRef.current.push(t);
+      triggersRef.current.push(trig);
     }
 
     return () => {
-      triggersRef.current.forEach((t) => t.kill());
+      triggersRef.current.forEach((trig) => trig.kill());
       triggersRef.current = [];
     };
   }, []);
@@ -172,17 +171,16 @@ export default function Collections() {
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="w-16 h-px bg-[#17409A]/20" />
             <p className="text-[#17409A] font-bold text-sm tracking-widest uppercase">
-              Bộ sưu tập đặc biệt
+              {t.collections.subtitle}
             </p>
             <div className="w-16 h-px bg-[#17409A]/20" />
           </div>
           <h2 className="text-[#1A1A2E] font-black text-5xl sm:text-6xl md:text-7xl leading-tight mb-6">
-            Khám phá thế giới của{" "}
-            <span className="text-[#17409A]">gấu bông thông minh</span>
+            {t.collections.titleLine1}{" "}
+            <span className="text-[#17409A]">{t.collections.titleLine2}</span>
           </h2>
           <p className="text-[#6B7280] text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Mỗi bộ sưu tập được thiết kế với chủ đề riêng biệt, phù hợp với sở
-            thích và nhu cầu phát triển của từng bé
+            {t.collections.description}
           </p>
         </div>
 
@@ -229,7 +227,7 @@ export default function Collections() {
                       boxShadow: `0 4px 12px ${col.color}40`,
                     }}
                   >
-                    Đặc biệt
+                    {t.collections.specialBadge}
                   </div>
                 </div>
                 <h3
@@ -251,7 +249,7 @@ export default function Collections() {
                       "0 8px 24px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)",
                   }}
                 >
-                  Khám phá ngay
+                  {t.collections.exploreNow}
                   <IoArrowForward className="text-lg transition-transform duration-200 group-hover:translate-x-1" />
                 </span>
               </div>
@@ -306,7 +304,7 @@ export default function Collections() {
                       boxShadow: `0 4px 12px ${col.color}40`,
                     }}
                   >
-                    Mới
+                    {t.collections.newBadge}
                   </div>
                 </div>
                 <h3
@@ -328,7 +326,7 @@ export default function Collections() {
                       "0 6px 20px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.1)",
                   }}
                 >
-                  Khám phá
+                  {t.collections.explore}
                   <IoArrowForward className="text-base transition-transform duration-200 group-hover:translate-x-1" />
                 </span>
               </div>

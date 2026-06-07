@@ -12,12 +12,14 @@ import {
 } from "react-icons/io5";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const BRAND_TEXT = "DESIGN A BEAR";
 
 export default function Footer() {
+  const { t } = useLanguage();
   const footerRef = useRef<HTMLElement>(null);
   const brandTextRef = useRef<HTMLDivElement>(null);
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
@@ -91,7 +93,7 @@ export default function Footer() {
     }
 
     return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      ScrollTrigger.getAll().forEach((trig) => trig.kill());
     };
   }, []);
 
@@ -159,9 +161,9 @@ export default function Footer() {
             </div>
 
             <p className="text-[#F4F7FF]/60 text-sm mb-4 md:mb-6 leading-relaxed">
-              Gấu bông thông minh tích hợp IoT & AI,
+              {t.footer.tagline}
               <br className="hidden sm:block" />
-              dạy học cho trẻ em theo cách riêng của chúng.
+              {t.footer.tagline2}
             </p>
 
             {/* Email input */}
@@ -171,28 +173,28 @@ export default function Footer() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Đăng ký nhận tin tức & ưu đãi"
+                  placeholder={t.footer.newsletterPlaceholder}
                   required
                   className="flex-1 bg-transparent px-4 md:px-5 py-3 md:py-4 text-[#F4F7FF] placeholder-[#F4F7FF]/35 text-sm outline-none"
                 />
                 <button
                   type="submit"
                   className="bg-[#17409A] hover:bg-[#4A90E2] text-white px-4 md:px-5 flex items-center justify-center transition-colors duration-200"
-                  aria-label="Đăng ký"
+                  aria-label={t.footer.subscribe}
                 >
                   <IoArrowForward className="text-lg" />
                 </button>
               </div>
             </form>
             <p className="text-[#F4F7FF]/35 text-xs mb-8 md:mb-0">
-              Bằng cách đăng ký, bạn đồng ý với{" "}
+              {t.footer.termsAgree}{" "}
               <Link
                 href="/terms"
                 className="underline underline-offset-2 hover:text-[#F4F7FF]/70 transition-colors"
               >
-                Điều khoản sử dụng
+                {t.footer.termsLink}
               </Link>{" "}
-              của chúng tôi.
+              {t.footer.termsAgree2}
             </p>
 
             {/* Social icons */}
@@ -238,14 +240,14 @@ export default function Footer() {
             {/* Mua sắm */}
             <div>
               <h4 className="text-[#F4F7FF] font-bold md:font-semibold text-sm tracking-widest uppercase mb-4 md:mb-6">
-                Mua sắm
+                {t.footer.shopTitle}
               </h4>
               <ul className="space-y-3 md:space-y-4">
                 {[
-                  { label: "Tất cả sản phẩm", href: "/products" },
-                  { label: "Gấu bông", href: "/bears" },
-                  { label: "Phụ kiện", href: "/accessories" },
-                  { label: "Bộ sưu tập", href: "/collections" },
+                  { label: t.footer.shopAllProducts, href: "/products" },
+                  { label: t.footer.shopBears, href: "/bears" },
+                  { label: t.footer.shopAccessories, href: "/accessories" },
+                  { label: t.footer.shopCollections, href: "/collections" },
                 ].map((item) => (
                   <li key={item.href}>
                     <Link
@@ -262,14 +264,14 @@ export default function Footer() {
             {/* Hỗ trợ */}
             <div>
               <h4 className="text-[#F4F7FF] font-bold md:font-semibold text-sm tracking-widest uppercase mb-4 md:mb-6">
-                Hỗ trợ
+                {t.footer.supportTitle}
               </h4>
               <ul className="space-y-3 md:space-y-4">
                 {[
-                  { label: "Câu hỏi thường gặp", href: "/faq" },
-                  { label: "Vận chuyển", href: "/shipping" },
-                  { label: "Đổi trả", href: "/returns" },
-                  { label: "Bảo hành", href: "/warranty" },
+                  { label: t.footer.supportFaq, href: "/faq" },
+                  { label: t.footer.supportShipping, href: "/shipping" },
+                  { label: t.footer.supportReturns, href: "/returns" },
+                  { label: t.footer.supportWarranty, href: "/warranty" },
                 ].map((item) => (
                   <li key={item.href}>
                     <Link
@@ -286,12 +288,12 @@ export default function Footer() {
             {/* Về chúng tôi */}
             <div>
               <h4 className="text-[#F4F7FF] font-bold md:font-semibold text-sm tracking-widest uppercase mb-4 md:mb-6">
-                Về chúng tôi
+                {t.footer.aboutTitle}
               </h4>
               <ul className="space-y-3 md:space-y-4">
                 {[
-                  { label: "Câu chuyện", href: "/story" },
-                  { label: "Kết nối IoT", href: "/connect" },
+                  { label: t.footer.aboutStory, href: "/story" },
+                  { label: t.footer.aboutConnect, href: "/connect" },
                   {
                     label: "Instagram",
                     href: "https://instagram.com",
@@ -306,12 +308,12 @@ export default function Footer() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      target={item.external ? "_blank" : undefined}
-                      rel={item.external ? "noopener noreferrer" : undefined}
+                      target={"external" in item ? "_blank" : undefined}
+                      rel={"external" in item ? "noopener noreferrer" : undefined}
                       className="text-[#F4F7FF]/50 hover:text-[#4A90E2] text-sm transition-colors duration-200 flex items-center gap-1"
                     >
                       {item.label}
-                      {item.external && (
+                      {"external" in item && (
                         <span className="text-[#F4F7FF]/25 text-xs">↗</span>
                       )}
                     </Link>
@@ -327,20 +329,20 @@ export default function Footer() {
       <div className="border-t border-[#F4F7FF]/10">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 md:px-8 lg:px-16 py-5 md:py-6 flex flex-col sm:flex-row justify-between items-center gap-3 md:gap-4">
           <p className="text-[#F4F7FF]/35 text-xs md:text-sm text-center sm:text-left">
-            ©2026 Design a Bear. All rights reserved.
+            {t.footer.copyright}
           </p>
           <div className="flex gap-6 md:gap-8">
             <Link
               href="/privacy"
               className="text-[#F4F7FF]/35 hover:text-[#F4F7FF]/70 text-xs md:text-sm transition-colors"
             >
-              Chính sách bảo mật
+              {t.footer.privacyPolicy}
             </Link>
             <Link
               href="/terms"
               className="text-[#F4F7FF]/35 hover:text-[#F4F7FF]/70 text-xs md:text-sm transition-colors"
             >
-              Điều khoản sử dụng
+              {t.footer.termsOfUse}
             </Link>
           </div>
         </div>
