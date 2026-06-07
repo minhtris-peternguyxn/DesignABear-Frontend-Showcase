@@ -1,13 +1,11 @@
-import { type ReactNode } from "react";
 import { Metadata } from "next";
-import StaffLayout from "@/components/staff/StaffLayout";
-import { PRIVATE_ROBOTS } from "@/constants/seo";
+import QCLayout from "@/components/qc/QCLayout";
 
 export const metadata: Metadata = {
-  title: "QC Portal",
-  robots: PRIVATE_ROBOTS,
+  title: "Bảng điều khiển QC | Design A Bear",
+  description: "Bảng điều khiển quản lý chất lượng dành cho Design A Bear",
 };
 
-export default function Layout({ children }: { children: ReactNode }) {
-  return <StaffLayout>{children}</StaffLayout>;
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <QCLayout>{children}</QCLayout>;
 }

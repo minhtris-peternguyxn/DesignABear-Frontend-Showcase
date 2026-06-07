@@ -12,18 +12,18 @@ import { inventoryService, locationService } from "@/services";
 import type { Location } from "@/types";
 
 interface Props {
-  productId: string; // This will be AccessoryId if isAccessory is true
-  variantId?: string | null;
+  productId: string; // The parent ID
+  identityId?: string | null; // The specific identifier
   productName: string;
   actionType: "RESERVE" | "RELEASE";
-  isAccessory?: boolean;
+  isAccessory: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
 export default function ReserveReleaseModal({
   productId,
-  variantId,
+  identityId,
   productName,
   actionType,
   isAccessory,
@@ -71,18 +71,18 @@ export default function ReserveReleaseModal({
 
     setIsSubmitting(true);
     try {
+      const targetId = identityId || productId;
+      
       const res = isReserve
         ? await inventoryService.reserveStock(
-            isAccessory ? null : productId,
-            variantId,
-            isAccessory ? productId : null,
+            targetId,
+            isAccessory,
             quantity,
             selectedLocationId,
           )
         : await inventoryService.releaseReservation(
-            isAccessory ? null : productId,
-            variantId,
-            isAccessory ? productId : null,
+            targetId,
+            isAccessory,
             quantity,
             selectedLocationId,
           );

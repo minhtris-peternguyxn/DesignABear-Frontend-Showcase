@@ -1,260 +1,212 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { formatPrice } from "@/utils/currency";
 import { useDebounce } from "@/hooks";
-import Image from "next/image";
 import {
   MdSearch,
   MdAdd,
   MdEdit,
-  MdGridView,
-  MdTableRows,
   MdRemoveRedEye,
   MdDelete,
+  MdRefresh,
 } from "react-icons/md";
-import AccessoryModal from "../products/AccessoryModal";
+import { useAdminAccessoriesApi } from "@/hooks/useAdminAccessoriesApi";
 import { useToast } from "@/contexts/ToastContext";
-import { accessoryService } from "@/services/accessory.service";
-import type { AccessoryResponse } from "@/types/accessory";
-
-type ViewMode = "grid" | "table";
-
-const COL_HEADS = [
-  "Phụ kiện",
-  "SKU",
-  "Giá mục tiêu",
-  "Giá gốc",
-  "Lắp ráp",
-  "Trạng thái",
-  "",
-];
+import DataTable from "@/components/admin/common/DataTable";
+import Pagination from "@/components/admin/common/Pagination";
+import ConfirmDialog from "@/components/admin/common/ConfirmDialog";
 
 export default function AccessoriesGrid() {
+  const router = useRouter();
+  const [statusFilter, setStatus] = useState<"active" | "draft" | "all">("all");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 350);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  
-  const [accessories, setAccessories] = useState<AccessoryResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [editingAccessory, setEditingAccessory] = useState<AccessoryResponse | null>(null);
-  const [deletingAccessory, setDeletingAccessory] = useState<AccessoryResponse | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
+  const { accessories, loading, fetchAccessories, deleteAccessory } = useAdminAccessoriesApi();
   const { success, error: toastError } = useToast();
 
-  const fetchAccessories = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await accessoryService.getAll();
-      if (res.isSuccess && res.value) {
-        setAccessories(res.value);
-      }
-    } catch (err) {
-      toastError("Không thể tải danh sách phụ kiện");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toastError]);
-
-  useEffect(() => {
+  const handleRefresh = useCallback(() => {
     fetchAccessories();
   }, [fetchAccessories]);
 
-  const handleEdit = (a: AccessoryResponse) => {
-    setEditingAccessory(a);
-    setModalOpen(true);
-  };
-
-  const handleDelete = (a: AccessoryResponse) => {
-    setDeletingAccessory(a);
-  };
+  useEffect(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const handleDeleteConfirm = async () => {
-    if (!deletingAccessory) return;
-    setIsDeleting(true);
-    try {
-      const ok = await accessoryService.deleteAccessory(deletingAccessory.accessoryId);
-      if (ok.isSuccess) {
-        success("Xóa phụ kiện thành công!");
-        fetchAccessories();
-      } else {
-        toastError(ok.error?.description || "Có lỗi xảy ra khi xóa.");
-      }
-    } catch (err) {
-      toastError("Lỗi kết nối");
-    } finally {
-      setIsDeleting(false);
-      setDeletingAccessory(null);
+    if (!deletingId) return;
+    const ok = await deleteAccessory(deletingId);
+    if (ok) {
+      success("Đã xóa phụ kiện thành công!");
+      handleRefresh();
+    } else {
+      toastError("Không thể xóa phụ kiện này.");
     }
+    setDeletingId(null);
   };
 
-  const filtered = useMemo(() =>
-    accessories.filter(a => {
-      if (debouncedSearch) {
-        const q = debouncedSearch.toLowerCase();
-        return a.name.toLowerCase().includes(q) || (a.sku ?? "").toLowerCase().includes(q);
-      }
-      return true;
-    }),
-    [accessories, debouncedSearch]
-  );
+  const filtered = useMemo(() => {
+    return accessories
+      .map(a => ({ ...a, id: a.accessoryId }))
+      .filter((a) => {
+        const statusMatch = statusFilter === "all" || (statusFilter === "active" ? a.isActive : !a.isActive);
+        const searchMatch = !debouncedSearch || a.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+        return statusMatch && searchMatch;
+      });
+  }, [accessories, statusFilter, debouncedSearch]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, debouncedSearch]);
 
   return (
-    <div className="bg-white rounded-3xl p-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <p className="text-[#9CA3AF] text-[10px] font-black tracking-[0.22em] uppercase mb-0.5">Danh mục</p>
-          <p className="text-[#1A1A2E] font-black text-xl">Quản lý phụ kiện</p>
+    <div className="space-y-6">
+      {/* Search & Actions */}
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
+        <div className="flex items-center gap-2 p-1.5 bg-white rounded-2xl shadow-sm border border-white/50">
+          {[
+            { id: "all", label: "Tất cả" },
+            { id: "active", label: "Đang bán" },
+            { id: "draft", label: "Bản nháp" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setStatus(tab.id as any)}
+              className={`px-5 py-2.5 rounded-xl text-[13px] font-black transition-all ${
+                statusFilter === tab.id
+                  ? "bg-[#17409A] text-white shadow-md"
+                  : "text-gray-400 hover:text-[#17409A] hover:bg-gray-50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] text-base pointer-events-none" />
+
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="relative flex-1 md:w-80 group">
+            <MdSearch className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-2xl group-focus-within:text-[#17409A] transition-colors" />
             <input
+              type="text"
+              placeholder="Tìm phụ kiện..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm phụ kiện..."
-              className="bg-[#F4F7FF] text-[#1A1A2E] text-sm font-semibold placeholder:text-[#9CA3AF] rounded-xl pl-9 pr-4 py-2.5 outline-none border-2 border-transparent focus:border-[#17409A]/20 transition-colors w-44"
+              className="w-full pl-14 pr-6 py-3.5 bg-white border border-white/50 rounded-2xl shadow-sm text-sm font-bold text-[#1A1A2E] outline-none focus:border-[#17409A]/20 transition-all placeholder:text-gray-300"
             />
           </div>
-          <div className="flex bg-[#F4F7FF] rounded-xl p-0.5">
-            {(["grid", "table"] as ViewMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => setViewMode(m)}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                  viewMode === m ? "bg-[#17409A] text-white shadow-sm" : "text-[#9CA3AF] hover:text-[#6B7280]"
-                }`}
-              >
-                {m === "grid" ? <MdGridView className="text-base" /> : <MdTableRows className="text-base" />}
-              </button>
-            ))}
-          </div>
-          <button 
-            onClick={() => {
-              setEditingAccessory(null);
-              setModalOpen(true);
-            }} 
-            className="flex items-center gap-1.5 bg-[#17409A] text-white text-xs font-black px-4 py-2.5 rounded-xl hover:bg-[#0f2d70] transition-colors whitespace-nowrap"
+          <button
+            onClick={() => router.push("/admin/accessories/add")}
+            className="flex items-center gap-2 bg-[#17409A] text-white text-sm font-black px-8 py-3.5 rounded-2xl hover:bg-[#0E2A66] transition-all shadow-lg shadow-[#17409A]/20"
           >
-            <MdAdd className="text-base" /> Thêm mới
+            <MdAdd className="text-xl" /> Thêm mới
           </button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="py-20 text-center text-[#9CA3AF] font-bold">Đang tải dữ liệu...</div>
-      ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-[#9CA3AF] font-bold">Không tìm thấy phụ kiện nào.</div>
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filtered.map(a => (
-            <div key={a.accessoryId} className="group bg-[#F8F9FF] rounded-2xl overflow-hidden border border-transparent hover:border-[#17409A]/10 hover:shadow-lg transition-all p-4 flex flex-col h-full">
-              <div className="relative h-28 flex items-center justify-center bg-white rounded-xl mb-4 overflow-hidden">
-                <Image
-                  src={a.imageUrl || "/teddy_bear.png"}
-                  alt={a.name}
-                  width={80}
-                  height={80}
-                  className="object-contain transition-transform group-hover:scale-110"
-                />
-              </div>
-              <div className="flex-1">
-                <p className="text-[#1A1A2E] font-black text-sm mb-1 line-clamp-1">{a.name}</p>
-                <div className="text-[10px] font-bold text-[#9CA3AF] mb-3">{a.sku}</div>
-                <p className="text-[#17409A] font-black text-base">{formatPrice(a.targetPrice)}</p>
-                <div className="flex flex-wrap gap-2 text-[9px] mt-2 text-[#6B7280]">
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#E9ECEF]">Base: {formatPrice(a.baseCost)}</span>
-                    <span className="bg-white px-2 py-0.5 rounded border border-[#E9ECEF]">Assembly: {formatPrice(a.assemblyCost)}</span>
+      <DataTable
+        data={paginatedData}
+        isLoading={loading}
+        columns={[
+          {
+            header: "Phụ kiện",
+            accessor: (a) => (
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-[#F4F7FF] border border-white p-1.5 overflow-hidden shadow-sm shrink-0">
+                  <img
+                    src={a.imageUrl || "/accessory_placeholder.png"}
+                    className="w-full h-full object-contain rounded-xl"
+                    alt=""
+                  />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base font-black text-[#1A1A2E] truncate mb-0.5">{a.name}</p>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">ID: {a.accessoryId.slice(0, 8)}</p>
                 </div>
               </div>
-              <div className="mt-4 flex gap-1.5 pt-3 border-t border-[#E9ECEF]">
+            ),
+          },
+          {
+            header: "Giá bán",
+            accessor: (a) => <span className="font-black text-[#17409A] text-base">{formatPrice(a.targetPrice)}</span>,
+          },
+          {
+            header: "Tồn kho",
+            align: "center",
+            accessor: (a) => (
+              <span className={`text-sm font-black ${(a.available || 0) <= 10 ? "text-orange-500" : "text-gray-500"}`}>
+                {a.available || 0}
+              </span>
+            ),
+          },
+          {
+            header: "Trạng thái",
+            align: "center",
+            accessor: (a) => (
+              <span className={`text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider ${
+                a.isActive ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"
+              }`}>
+                {a.isActive ? "Đang bán" : "Bản nháp"}
+              </span>
+            ),
+          },
+          {
+            header: "Hành động",
+            align: "right",
+            accessor: (a) => (
+              <div className="flex items-center justify-end gap-2.5">
                 <button
-                  onClick={() => handleEdit(a)}
-                  className="flex-1 bg-[#17409A]/8 hover:bg-[#17409A]/15 text-[#17409A] text-[10px] font-black py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
+                  onClick={() => router.push(`/admin/accessories/${a.id}`)}
+                  className="p-2.5 rounded-2xl text-gray-400 hover:text-[#17409A] hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100"
+                  title="Xem chi tiết"
                 >
-                  <MdEdit className="text-sm" /> Sửa
+                  <MdRemoveRedEye className="text-xl" />
                 </button>
                 <button
-                  onClick={() => handleDelete(a)}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
+                  onClick={() => router.push(`/admin/accessories/${a.id}/edit`)}
+                  className="p-2.5 rounded-2xl text-gray-400 hover:text-[#17409A] hover:bg-blue-50 transition-all border border-transparent hover:border-blue-100"
+                  title="Sửa"
                 >
-                  <MdDelete className="text-base" />
+                  <MdEdit className="text-xl" />
+                </button>
+                <button
+                  onClick={() => setDeletingId(a.id as string)}
+                  className="p-2.5 rounded-2xl text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+                  title="Xóa"
+                >
+                  <MdDelete className="text-xl" />
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[9px] font-black text-[#9CA3AF] tracking-widest uppercase border-b border-[#F4F7FF]">
-                {COL_HEADS.map((h, i) => <th key={i} className="pb-4 px-2">{h}</th>)}
-              </tr>
-            </thead>
-            <tbody className="text-sm font-bold text-[#1A1A2E]">
-              {filtered.map(a => (
-                <tr key={a.accessoryId} className="group border-b border-[#F4F7FF] hover:bg-[#F8F9FF] transition-colors">
-                  <td className="py-3 px-2 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#F4F7FF] rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
-                      <Image src={a.imageUrl || "/teddy_bear.png"} alt={a.name} width={32} height={32} className="object-contain" />
-                    </div>
-                    <span>{a.name}</span>
-                  </td>
-                  <td className="py-3 px-2 font-mono text-xs">{a.sku}</td>
-                  <td className="py-3 px-2 text-[#17409A]">{formatPrice(a.targetPrice)}</td>
-                  <td className="py-3 px-2 text-xs text-[#6B7280]">{formatPrice(a.baseCost)}</td>
-                  <td className="py-3 px-2 text-xs text-[#6B7280]">{formatPrice(a.assemblyCost)}</td>
-                  <td className="py-3 px-2">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] ${a.isActive ? "bg-[#4ECDC418] text-[#4ECDC4]" : "bg-red-50 text-red-400"}`}>
-                      {a.isActive ? "Đang bán" : "Nháp"}
-                    </span>
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={() => handleEdit(a)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#17409A] hover:bg-[#F4F7FF] transition-all"><MdEdit /></button>
-                      <button onClick={() => handleDelete(a)} className="w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-all"><MdDelete /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ),
+          },
+        ]}
+      />
 
-      {/* Modal */}
-      {isModalOpen && (
-        <AccessoryModal
-          accessory={editingAccessory}
-          onClose={() => {
-            setModalOpen(false);
-            setEditingAccessory(null);
-          }}
-          onSuccess={() => {
-            setModalOpen(false);
-            fetchAccessories();
-          }}
-        />
-      )}
+      <Pagination 
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        isLoading={loading}
+      />
 
-      {/* Delete Confirm */}
-      {deletingAccessory && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4"><MdDelete className="text-2xl" /></div>
-            <h3 className="text-lg font-black text-[#1A1A2E] mb-2">Xác nhận xóa?</h3>
-            <p className="text-sm font-semibold text-[#6B7280] mb-6">Bạn có chắc muốn xóa phụ kiện <span className="text-[#1A1A2E] font-black">"{deletingAccessory.name}"</span>?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeletingAccessory(null)} className="flex-1 py-3 rounded-2xl text-sm font-bold text-[#6B7280] bg-[#F4F7FF]">Hủy</button>
-              <button onClick={handleDeleteConfirm} disabled={isDeleting} className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-red-500 disabled:opacity-50">Xóa ngay</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Xác nhận xóa?"
+        message="Bạn có chắc chắn muốn xóa phụ kiện này? Mọi dữ liệu liên quan sẽ bị gỡ bỏ."
+        variant="danger"
+      />
     </div>
   );
 }

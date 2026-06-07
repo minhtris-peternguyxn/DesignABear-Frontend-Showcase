@@ -34,7 +34,7 @@ const EXPANDABLE_SECTIONS = [
       { label: "Đơn hàng", href: "/admin/orders" },
       { label: "Khách hàng", href: "/admin/customers" },
       { label: "Mã giảm giá", href: "/admin/promotions" },
-      { label: "Nhân viên", href: "/admin/staff" },
+      // { label: "Nhân viên", href: "/admin/staff" },
     ],
   },
   {
@@ -45,14 +45,15 @@ const EXPANDABLE_SECTIONS = [
       { label: "Phụ kiện", href: "/admin/accessories" },
       { label: "Kho hàng", href: "/admin/inventory" },
       { label: "Thuộc tính", href: "/admin/attributes" },
-      { label: "Nhóm tùy chỉnh", href: "/admin/personalization-groups" },
+      // { label: "Nhóm tùy chỉnh", href: "/admin/personalization-groups" },
     ],
   },
   {
     icon: MdBarChart,
     label: "Phân tích & Báo cáo",
     children: [
-      { label: "Báo cáo", href: "/admin/reports" },
+      { label: "Báo cáo doanh thu", href: "/admin/reports" },
+      { label: "Bảng lương", href: "/admin/payroll" },
       { label: "Thống kê", href: "/admin/analytics" },
       { label: "Đánh giá", href: "/admin/reviews" },
     ],

@@ -69,6 +69,7 @@ export interface GetProductsRequest {
   pageSize?: number;
   productType?: string;
   sortBy?: string;
+  searchTerm?: string;
 }
 
 export interface GetProductReviewsRequest {
@@ -80,6 +81,7 @@ export interface CreateCategoryRequest {
   parentId?: string | null;
   name: string;
   slug: string;
+  isActive?: boolean;
 }
 export type UpdateCategoryRequest = CreateCategoryRequest;
 
@@ -87,6 +89,7 @@ export interface CreateCharacterRequest {
   name: string;
   slug: string;
   licenseBrand?: string | null;
+  isActive?: boolean;
 }
 export type UpdateCharacterRequest = CreateCharacterRequest;
 
@@ -128,30 +131,35 @@ export interface CreateProductMediaRequest {
   sortOrder: number;
 }
 
-export interface ProductVariantInlineRequest {
-  sizeTag: string;
-  sizeDescription: string;
+export interface CreateProductVariantRequest {
+  sku: string;
+  price: number;
+  weightGram: number;
+  sizeTag: string; // XS, S, M, L, XL, XXL, OS
+  sizeDescription: string; // Real dimensions e.g. "25cm"
   baseCost: number;
   assemblyCost: number;
-  weightGram: number;
-  price: number;
   stockQuantity: number;
 }
 
 export interface CreateProductRequest {
   name: string;
   slug: string;
+  productType: string;
   description: string;
-  model3DUrl: string;
   isPersonalizable: boolean;
   isActive: boolean;
+  price: number;
   sku: string;
+  weightGram: number;
   stockQuantity: number;
+  model3DUrl?: string;
   categoryIds: string[];
   characterIds: string[];
-  variants: ProductVariantInlineRequest[];
+  accessoryIds: string[];
   media: CreateProductMediaRequest[];
   comboImages?: CreateProductComboImageRequest[];
+  variants?: CreateProductVariantRequest[];
 }
 
 export interface CreateProductComboImageRequest {
@@ -159,21 +167,7 @@ export interface CreateProductComboImageRequest {
   imageUrl: string;
 }
 
-export interface UpdateProductRequest {
-  name: string;
-  slug: string;
-  description: string;
-  model3DUrl: string;
-  isPersonalizable: boolean;
-  isActive: boolean;
-  sku: string;
-  stockQuantity: number;
-  categoryIds: string[];
-  characterIds: string[];
-  variants: ProductVariantInlineRequest[];
-  media: CreateProductMediaRequest[];
-  comboImages?: CreateProductComboImageRequest[];
-}
+export type UpdateProductRequest = CreateProductRequest;
 
 /* ── Build API Requests ── */
 
@@ -182,7 +176,8 @@ export interface CreateBuildRequest {
   baseProductId: string;
   buildName: string;
   personalizationNote: string;
-  buildComponents: { optionProductId: string }[];
+  includesSmartChip?: boolean;
+  buildComponents?: { optionProductId: string }[];
 }
 
 export interface CreateOrderFromCartRequest {
@@ -209,14 +204,14 @@ export interface CreateCartRequest {
 export interface AddToCartRequest {
   cartId: string;
   productId: string;
-  variantId: string;
+  variantId?: string | null;
   buildId: string | null;
+  includesSmartChip?: boolean;
   quantity: number;
   unitPriceSnapshot: number;
-  productName?: string;
-  productImageUrl?: string | null;
-  productNameSnapshot?: string;
   productImageUrlSnapshot?: string | null;
+  sizeTag?: string;
+  sizeDescription?: string;
 }
 
 /* ── Personalization Group API Requests ── */
@@ -316,4 +311,44 @@ export interface GetRevenueReportRequest {
 
 export interface ToggleFavoriteRequest {
   productId: string;
+}
+
+/* ── Accessory API Requests ── */
+
+export interface CreateAccessoryRequest {
+  name: string;
+  sku: string;
+  description: string;
+  imageUrl: string;
+  baseCost: number;
+  assemblyCost: number;
+  targetPrice: number;
+  stockQuantity: number;
+  isActive: boolean;
+}
+
+export interface UpdateAccessoryRequest {
+  name: string;
+  sku: string;
+  description: string;
+  imageUrl: string;
+  baseCost: number;
+  assemblyCost: number;
+  targetPrice: number;
+  stockQuantity: number;
+  isActive: boolean;
+}
+
+export interface CreateFulfillmentRequest {
+  orderId: string;
+  trackingNumber?: string;
+  carrier?: string;
+}
+
+export interface UpdateFulfillmentRequest {
+  status: string;
+  trackingNumber?: string;
+  carrier?: string;
+  shippedAt?: string;
+  deliveredAt?: string;
 }

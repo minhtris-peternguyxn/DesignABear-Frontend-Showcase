@@ -1,28 +1,32 @@
 import { type ProductCardProps } from "@/components/shared/ProductCard";
 
-export interface CartProduct extends ProductCardProps {
-  description: string;
-  slug?: string;
-  productType?: string;
-  size?: string;
-  sizeTag?: string;
-  sku?: string;
-  href?: string;
-}
-
 export interface CartItem {
   cartItemId: string;
-  productId: string;
-  variantId?: string;
   buildId?: string | null;
-  product: CartProduct;
+  product: ProductCardProps;
   quantity: number;
-  buildDetails?: any;
+  sizeTag?: string;
+  sizeDetails?: string;
+  accessories?: {
+    id: string;
+    name: string;
+    price: number;
+    image?: string;
+  }[];
+  baseVariantId?: string;
+  availableStock?: number;
 }
 
 export interface CartContextType {
   items: CartItem[];
-  addItem: (product: ProductCardProps, quantity?: number, buildId?: string | null, variantId?: string) => Promise<void>;
+  addItem: (
+    product: ProductCardProps,
+    quantity?: number,
+    buildId?: string | null,
+    sizeTag?: string,
+    sizeDetails?: string,
+    accessories?: { id: string; name: string; price: number; image?: string }[],
+  ) => Promise<void>;
   removeItem: (cartItemId: string) => Promise<void>;
   updateQuantity: (cartItemId: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;

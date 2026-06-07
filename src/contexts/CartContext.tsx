@@ -15,17 +15,64 @@ import {
 } from "@/types/cart";
 import { useCartApi } from "@/hooks/useCartApi";
 import { STORAGE_KEYS } from "@/constants";
-import { mapApiCartItemToUI } from "@/utils/cart.mapper";
+import type { CartItem as ApiCartItem, Build } from "@/types/responses";
+import BaseApiService from "@/api/base";
+import { getComponentsForValidation } from "@/utils/stock_utils";
+import { buildService } from "@/services/build.service";
+import { inventoryService } from "@/services/inventory.service";
+import { accessoryService } from "@/services/accessory.service";
+import { useToast } from "@/contexts/ToastContext";
 
 const CartContext = createContext<CartContextType | null>(null);
 
-/**
- * CartProvider: The Orchestrator for shopping cart state and API synchronization.
- */
+function mapApiToUI(
+  apiItem: ApiCartItem,
+  buildDetail?: Build | null,
+  previousItem?: UICartItem,
+): UICartItem {
+  const safeProductName =
+    apiItem.productNameSnapshot ??
+    apiItem.productName ??
+    previousItem?.product.name ??
+    "Sản phẩm";
+
+  return {
+    cartItemId: apiItem.cartItemId,
+    buildId: apiItem.buildId,
+    product: {
+      id: apiItem.productId,
+      slug: apiItem.productSlug,
+      name: safeProductName,
+      description: apiItem.sku
+        ? `Mã SP: ${apiItem.sku}`
+        : (previousItem?.product.description ?? "Sản phẩm trong giỏ"),
+      price: apiItem.unitPriceSnapshot ?? apiItem.variantPrice ?? 0,
+      image:
+        apiItem.productImageUrl ??
+        previousItem?.product.image ??
+        "/teddy_bear.png",
+      badge: apiItem.productType === "BASE_BEAR" ? "Gấu bông" : "Sản phẩm",
+      badgeColor: "#17409A",
+      href: apiItem.productSlug
+        ? `/products/${apiItem.productSlug}`
+        : previousItem?.product.href || `/products/${apiItem.productId}`,
+    },
+    quantity: apiItem.quantity,
+    // Build details
+    sizeTag:
+      apiItem.variantNameSnapshot?.match(/\((.*?)\)/)?.[1] ||
+      previousItem?.sizeTag,
+    sizeDetails: previousItem?.sizeDetails, // Often found in variant description if available
+    accessories: previousItem?.accessories, // Fallback to previous if available
+    baseVariantId: buildDetail?.baseVariantId || apiItem.productId,
+    availableStock: apiItem.availableStock,
+  };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<UICartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  
+  const toast = useToast();
   const {
     getCart,
     createCart,
@@ -35,176 +82,379 @@ export function CartProvider({ children }: { children: ReactNode }) {
     clearCartItems,
   } = useCartApi();
 
-  /**
-   * Internal helper to retrieve or initialize a CartId for the user.
-   */
-  const getOrCreateCartId = useCallback(async (): Promise<string> => {
-    let cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
-    if (cartId) return cartId;
-
-    const userObj = localStorage.getItem(STORAGE_KEYS.USER);
-    let userId = null;
-    if (userObj) {
-      try {
-        const user = JSON.parse(userObj);
-        userId = user.id || null;
-      } catch {}
-    }
-
-    const newCart = await createCart({ userId, currency: "VND" });
-    if (newCart?.cartId) {
-      localStorage.setItem(STORAGE_KEYS.CART_ID, newCart.cartId);
-      return newCart.cartId;
-    }
-    
-    throw new Error("Failed to initialize shopping cart.");
-  }, [createCart]);
-
-  /**
-   * Synchronizes the local state with the latest API data.
-   */
   const loadCart = useCallback(async () => {
     try {
-      const cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
-      if (!cartId) return null;
-
-      const cart = await getCart(cartId);
-      if (cart && cart.cartItems) {
-        setItems((prev) => {
-          const prevMap = new Map(prev.map(i => [i.cartItemId, i]));
-          // Map each API item using the robust fallback logic in the mapper
-          return cart.cartItems.reverse().map(apiItem => 
-            mapApiCartItemToUI(apiItem, prevMap.get(apiItem.cartItemId))
+      let cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
+      if (cartId) {
+        const cart = await getCart(cartId);
+        if (cart && cart.cartItems) {
+          // Fetch build details in parallel if they exist
+          const buildDetailsMap = new Map<string, Build>();
+          const buildIds = Array.from(
+            new Set(
+              cart.cartItems
+                .map((i) => i.buildId)
+                .filter((id): id is string => !!id),
+            ),
           );
-        });
-        return cartId;
+
+          if (buildIds.length > 0) {
+            await Promise.all(
+              buildIds.map(async (id) => {
+                try {
+                  const res = await buildService.getBuildById(id);
+                  if (res.isSuccess && res.value) {
+                    buildDetailsMap.set(id, res.value);
+                  }
+                } catch (err) {
+                  console.error(`Failed to fetch build ${id}`, err);
+                }
+              }),
+            );
+          }
+
+          setItems((prev) => {
+            const prevByCartItemId = new Map(
+              prev.map((item) => [item.cartItemId, item]),
+            );
+
+            return cart.cartItems.reverse().map((apiItem) => {
+              const buildDetail = apiItem.buildId
+                ? buildDetailsMap.get(apiItem.buildId)
+                : null;
+              const mapped = mapApiToUI(
+                apiItem,
+                buildDetail,
+                prevByCartItemId.get(apiItem.cartItemId),
+              );
+
+              if (buildDetail && buildDetail.buildComponents) {
+                mapped.accessories = buildDetail.buildComponents.map((c) => ({
+                  id: c.optionVariantId,
+                  name:
+                    (c as any).optionProductName ||
+                    (c as any).name ||
+                    "Phụ kiện",
+                  price: c.priceSnapshot,
+                }));
+                mapped.baseVariantId = buildDetail.baseVariantId;
+              }
+
+              return mapped;
+            });
+          });
+          return cartId;
+        }
       }
     } catch (err) {
-      console.warn("Cart synchronization failed, clearing local session.", err);
+      console.error("Cart load failed:", err);
       localStorage.removeItem(STORAGE_KEYS.CART_ID);
-      setItems([]);
     }
     return null;
   }, [getCart]);
 
-  // Initial Load
+  // Load cart on mount
   useEffect(() => {
     loadCart();
   }, [loadCart]);
 
-  /**
-   * Action: Add item to cart
-   */
   const addItem = useCallback(
     async (
       product: ProductCardProps,
       quantity = 1,
       buildId: string | null = null,
-      variantId?: string,
+      sizeTag?: string,
+      sizeDetails?: string,
+      accessories?: {
+        id: string;
+        name: string;
+        price: number;
+        image?: string;
+      }[],
     ) => {
       try {
-        const cartId = await getOrCreateCartId();
+        let cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
 
-        const response = await addItemToCart({
-          cartId,
-          productId: product.id,
-          variantId: variantId || product.variantId || "",
-          buildId,
-          quantity,
-          unitPriceSnapshot: product.price,
-          productName: product.name,
-          productImageUrl: product.image ?? null,
-          productNameSnapshot: product.name,
-          productImageUrlSnapshot: product.image ?? null,
+        if (!cartId) {
+          const userObj = localStorage.getItem(STORAGE_KEYS.USER);
+          let userId = null;
+          if (userObj) {
+            try {
+              const user = JSON.parse(userObj);
+              userId = user.id || null;
+            } catch {}
+          }
+          const newCart = await createCart({ userId, currency: "VND" });
+          cartId = newCart.cartId;
+          localStorage.setItem(STORAGE_KEYS.CART_ID, cartId!);
+        }
+
+        // --- Pre-check Stock (Required by Unified Inventory Guide) ---
+        const tempItem: any = {
+          product,
+          accessories,
+          baseVariantId: buildId
+            ? undefined
+            : (product as any).productId || product.id,
+        };
+        const hasAiProcessor = (accessories || []).some((acc) => {
+          const name = (acc.name || "").toUpperCase();
+          const id = (acc.id || "").toUpperCase();
+          return name.includes("AI PROCESSOR") || id === "CORE-ESP32-AI";
         });
+        const components = await getComponentsForValidation(tempItem);
 
-        if (response) {
-          // Handle potential CartId rotation (e.g. anonymous cart claimed by login)
-          if (response.cartId && response.cartId !== cartId) {
-            localStorage.setItem(STORAGE_KEYS.CART_ID, response.cartId);
+        // Perform batch check (sequential on FE simulator)
+        const stockMap = await inventoryService.batchCheck(components);
+
+        // Check for any failures
+        for (const comp of components) {
+          let existingCompQty = 0;
+          for (const cartItem of items) {
+            const baseId = cartItem.baseVariantId || (cartItem.product as any).productId || cartItem.product.id;
+            if (baseId === comp.identityId) {
+              existingCompQty += cartItem.quantity;
+            }
+            if (cartItem.accessories && cartItem.accessories.length > 0) {
+              for (const acc of cartItem.accessories) {
+                if (acc.id === comp.identityId) {
+                  existingCompQty += cartItem.quantity;
+                }
+              }
+            }
           }
 
-          // Merge the new item into the UI state
-          setItems((prev) => {
-            const existingIdx = prev.findIndex(i => i.cartItemId === response.cartItemId);
-            const mappedItem = mapApiCartItemToUI(response, existingIdx >= 0 ? prev[existingIdx] : undefined);
+          const requestedAdditionQty = quantity || 1;
+          const requestedTotal = existingCompQty + requestedAdditionQty;
 
-            if (existingIdx >= 0) {
-              const next = [...prev];
-              next[existingIdx] = mappedItem;
-              return next;
+          const available = stockMap[comp.identityId] || 0;
+          if (available < requestedTotal) {
+            throw new Error(`Sản phẩm hoặc phụ kiện không đủ hàng trong kho (Còn lại: ${available})`);
+          }
+        }
+        // -----------------------------------------------------------
+
+        const addRes = await addItemToCart({
+          cartId: cartId!,
+          productId: buildId
+            ? undefined
+            : (product as any).productId || product.id,
+          variantId: buildId
+            ? undefined
+            : (product as any).productId
+              ? product.id
+              : undefined,
+          buildId: buildId || null,
+          includesSmartChip: hasAiProcessor,
+          quantity,
+          unitPriceSnapshot: product.price,
+          sizeTag,
+          productImageUrlSnapshot: product.image || null,
+        });
+
+        if (addRes?.cartId && addRes.cartId !== cartId) {
+          cartId = addRes.cartId;
+          localStorage.setItem(STORAGE_KEYS.CART_ID, cartId);
+        }
+
+        // Optimistic update — inject item directly into state
+        if (addRes) {
+          setItems((prev) => {
+            const existingIndex = prev.findIndex(
+              (i) => i.cartItemId === addRes.cartItemId,
+            );
+
+            if (existingIndex >= 0) {
+              return prev.map((i, idx) =>
+                idx === existingIndex
+                  ? {
+                      ...i,
+                      quantity: i.quantity + quantity,
+                      sizeTag: sizeTag || i.sizeTag,
+                      sizeDetails: sizeDetails || i.sizeDetails,
+                      accessories: accessories || i.accessories,
+                    }
+                  : i,
+              );
+            } else {
+              return [
+                {
+                  cartItemId: addRes.cartItemId,
+                  buildId: buildId,
+                  product: {
+                    ...product,
+                    href:
+                      product.href || `/products/${product.slug || product.id}`,
+                  },
+                  quantity,
+                  sizeTag,
+                  sizeDetails,
+                  accessories,
+                  availableStock: addRes.availableStock,
+                },
+                ...prev,
+              ];
             }
-            return [mappedItem, ...prev];
           });
+        }
+
+        // Reserve the items on backend!
+        for (const comp of components) {
+          try {
+            await inventoryService.reserveStock(comp.identityId, comp.isAccessory, quantity, "55555555-5555-5555-5555-555555555555");
+          } catch (reserveError) {
+            console.error(`Failed to reserve stock for component ${comp.identityId}`, reserveError);
+          }
         }
 
         setIsOpen(true);
       } catch (err) {
-        console.error("Cart Add Error:", err);
         throw err;
       }
     },
-    [getOrCreateCartId, addItemToCart]
+    [loadCart, createCart, addItemToCart],
   );
 
-  /**
-   * Action: Remove item (Optimistic)
-   */
   const removeItem = useCallback(
     async (cartItemId: string) => {
-      const backup = [...items];
-      setItems(prev => prev.filter(i => i.cartItemId !== cartItemId));
-      
+      const currentItem = items.find((i) => i.cartItemId === cartItemId);
+      if (currentItem) {
+        const components = await getComponentsForValidation(currentItem);
+        for (const comp of components) {
+          try {
+            await inventoryService.releaseReservation(comp.identityId, comp.isAccessory, currentItem.quantity, "55555555-5555-5555-5555-555555555555");
+          } catch (releaseError) {
+            console.error(`Failed to release reservation for component ${comp.identityId}`, releaseError);
+          }
+        }
+      }
+
+      // Optimistic update
+      setItems((prev) => prev.filter((i) => i.cartItemId !== cartItemId));
+
       try {
         await removeCartItem(cartItemId);
       } catch (err) {
-        setItems(backup); // Rollback on failure
-        console.error("Failed to remove cart item:", err);
+        console.error("Failed to remove item from cart", err);
       }
     },
-    [items, removeCartItem]
+    [removeCartItem, loadCart, items],
   );
 
-  /**
-   * Action: Update quantity (Optimistic)
-   */
   const updateQuantity = useCallback(
     async (cartItemId: string, quantity: number) => {
-      if (quantity <= 0) return removeItem(cartItemId);
+      if (quantity <= 0) {
+        await removeItem(cartItemId);
+        return;
+      }
 
-      const backup = [...items];
-      setItems(prev => prev.map(i => i.cartItemId === cartItemId ? { ...i, quantity } : i));
+      const currentItem = items.find((i) => i.cartItemId === cartItemId);
+      if (currentItem) {
+        const components = await getComponentsForValidation(currentItem);
+
+        if (quantity > currentItem.quantity) {
+          // Only check if we are increasing
+          const stockMap = await inventoryService.batchCheck(components);
+
+          for (const comp of components) {
+            let existingCompQty = 0;
+            for (const cartItem of items) {
+              if (cartItem.cartItemId === cartItemId) continue;
+
+              const baseId = cartItem.baseVariantId || (cartItem.product as any).productId || cartItem.product.id;
+              if (baseId === comp.identityId) {
+                existingCompQty += cartItem.quantity;
+              }
+              if (cartItem.accessories && cartItem.accessories.length > 0) {
+                for (const acc of cartItem.accessories) {
+                  if (acc.id === comp.identityId) {
+                    existingCompQty += cartItem.quantity;
+                  }
+                }
+              }
+            }
+
+            const requestedTotal = existingCompQty + quantity;
+
+            const available = stockMap[comp.identityId] || 0;
+            if (available < requestedTotal) {
+              toast.error(
+                `Sản phẩm hoặc phụ kiện không đủ hàng trong kho (Còn lại: ${available})`,
+              );
+              return;
+            }
+          }
+
+          // Reserve the increased diff on backend
+          const diff = quantity - currentItem.quantity;
+          for (const comp of components) {
+            try {
+              await inventoryService.reserveStock(comp.identityId, comp.isAccessory, diff, "55555555-5555-5555-5555-555555555555");
+            } catch (reserveError) {
+              console.error(`Failed to reserve stock diff for component ${comp.identityId}`, reserveError);
+            }
+          }
+        } else if (quantity < currentItem.quantity) {
+          const diff = currentItem.quantity - quantity;
+          for (const comp of components) {
+            try {
+              await inventoryService.releaseReservation(comp.identityId, comp.isAccessory, diff, "55555555-5555-5555-5555-555555555555");
+            } catch (releaseError) {
+              console.error(`Failed to release reservation diff for component ${comp.identityId}`, releaseError);
+            }
+          }
+        }
+      }
+
+      // Optimistic quantity update
+      setItems((prev) =>
+        prev.map((i) => (i.cartItemId === cartItemId ? { ...i, quantity } : i)),
+      );
 
       try {
         await updateItemQuantity(cartItemId, quantity);
       } catch (err) {
-        setItems(backup); // Rollback on failure
-        console.error("Failed to update quantity:", err);
+        console.error("Failed to update cart item quantity", err);
+        loadCart(); // Sync on fail
       }
     },
-    [items, removeItem, updateItemQuantity]
+    [removeItem, updateItemQuantity, loadCart, items],
   );
 
-  /**
-   * Action: Clear Cart
-   */
   const clearCart = useCallback(async () => {
+    for (const item of items) {
+      try {
+        const components = await getComponentsForValidation(item);
+        for (const comp of components) {
+          try {
+            await inventoryService.releaseReservation(comp.identityId, comp.isAccessory, item.quantity, "55555555-5555-5555-5555-555555555555");
+          } catch (releaseError) {
+            console.error(`Failed to release reservation for component ${comp.identityId}`, releaseError);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to get components for clearing cart item", err);
+      }
+    }
+
+    setItems([]); // Optimistic
+
     const cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
-    setItems([]);
-    
-    if (cartId) {
+    if (cartId && items.length > 0) {
       try {
         await clearCartItems(cartId);
       } catch (err) {
-        console.error("Failed to clear cart:", err);
-        loadCart(); // Reconciliation
+        console.error("Failed to clear cart", err);
+        loadCart();
       }
     }
-  }, [clearCartItems, loadCart]);
+  }, [items, clearCartItems, loadCart]);
 
-  // Derived Values
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const totalPrice = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const totalPrice = items.reduce(
+    (sum, i) => sum + i.product.price * i.quantity,
+    0,
+  );
 
   return (
     <CartContext.Provider
@@ -231,3 +481,4 @@ export function useCart(): CartContextType {
   if (!ctx) throw new Error("useCart must be used within CartProvider");
   return ctx;
 }
+

@@ -6,7 +6,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { type ProductDetail } from "@/types";
 import { type ProductItem } from "@/types/products";
 import { type PersonalizationRule } from "@/types/responses";
-import { inventoryService } from "@/services/inventory.service";
 import ProductImageSection from "./ProductImageSection";
 import ProductInfoPanel from "./ProductInfoPanel";
 import ProductSpecs from "./ProductSpecs";
@@ -42,6 +41,8 @@ function mapDetailToItem(p: ProductDetail): ProductItem {
     characters: (p.characters || []).map((c) => c.name).filter(Boolean),
     badgeColor: "#17409A",
     slug: p.slug,
+    variants: (p.variants || []).filter((v) => v.available > 0),
+    accessories: (p.accessories || []),
   } as ProductItem;
 }
 
@@ -54,14 +55,54 @@ export default function ProductDetailClient({
   const [selectedAccessories, setSelectedAccessories] = useState<
     PersonalizationRule[]
   >([]);
-  const [availableStock, setAvailableStock] = useState<number | null>(null);
-  const [relatedStockMap, setRelatedStockMap] = useState<
-    Record<string, number>
-  >({});
   const heroRef = useRef<HTMLDivElement>(null);
   const productItem = mapDetailToItem(product);
 
-  // ── Combination Image Logic ──
+  // ── Transform accessories to personalization rules if none provided ──
+  const effectiveRules = useMemo(() => {
+    // If backend provided specific rules, prioritize them (and filter available)
+    if (personalizationRules && personalizationRules.length > 0) {
+      return personalizationRules.filter(rule => rule.addonProduct.isActive);
+    }
+
+    // Fallback to mapping linked accessories directly
+    const availableAccessories = (product.accessories || []).filter(acc => acc.isActive);
+
+    if (availableAccessories.length > 0) {
+      return availableAccessories.map(
+        (acc) =>
+          ({
+            ruleId: acc.accessoryId,
+            baseProductId: product.productId,
+            groupId: "linked-accessories",
+            allowedComponentProductId: acc.accessoryId,
+            isRequired: false,
+            maxQuantity: 1,
+            ruleType: "ACCESSORY",
+            addonProduct: {
+              productId: acc.accessoryId,
+              name: acc.name,
+              price: acc.targetPrice,
+              productType: "ACCESSORY",
+              media: acc.imageUrl
+                ? [{ url: acc.imageUrl, altText: acc.name, sortOrder: 1 }]
+                : [],
+              description: acc.description || "",
+              sku: acc.sku,
+              isPersonalizable: false,
+              isActive: true,
+              weightGram: 0,
+              available: acc.available,
+              onHand: acc.onHand,
+              createdAt: acc.createdAt,
+              updatedAt: acc.updatedAt,
+            } as any,
+          }) as PersonalizationRule,
+      );
+    }
+
+    return [];
+  }, [personalizationRules, product.accessories, product.productId]);
   const combinationKey = useMemo(() => {
     // Sort IDs alphabetically and join with |
     // EXCLUDING AI_PROCESSOR from image combination key (per requirement)
@@ -85,45 +126,14 @@ export default function ProductDetailClient({
     );
   }, [product.comboImages, combinationKey]);
 
-  // ── Calculate Initial Stock ──
-  useEffect(() => {
-    if (product.variants && product.variants.length > 0) {
-      const total = product.variants.reduce(
-        (acc, v) => acc + ((v.onHand || 0) - (v.reserved || 0)),
-        0,
-      );
-      setAvailableStock(total);
-    } else {
-      setAvailableStock(0);
-    }
-  }, [product.variants]);
-
-  // ── Fetch Stock for Related Products ──
-  useEffect(() => {
-    if (related.length > 0) {
-      (async () => {
-        try {
-          const results = await Promise.all(
-            related.map(async (p) => {
-              const res = await inventoryService.getTotalAvailable(p.id);
-              return {
-                id: p.id,
-                total:
-                  res.isSuccess && res.value ? res.value.totalAvailable : 0,
-              };
-            }),
-          );
-          const newMap: Record<string, number> = {};
-          results.forEach((r) => {
-            newMap[r.id] = r.total;
-          });
-          setRelatedStockMap(newMap);
-        } catch (err) {
-          console.error("Failed to fetch related stock:", err);
-        }
-      })();
-    }
-  }, [related]);
+  const isAIProcessorSelected = useMemo(() => {
+    return selectedAccessories.some((acc) => {
+      const type = (acc.addonProduct.productType || "").toUpperCase();
+      const name = (acc.addonProduct.name || "").toUpperCase();
+      const sku = (acc.addonProduct.sku || "").toUpperCase();
+      return type === "AI_PROCESSOR" || name.includes("AI PROCESSOR") || sku.includes("AI");
+    });
+  }, [selectedAccessories]);
 
   useEffect(() => {
     if (!heroRef.current) return;
@@ -150,22 +160,21 @@ export default function ProductDetailClient({
         className="max-w-screen-2xl mx-auto px-8 md:px-16 pt-12 pb-24"
       >
         <div className="flex flex-col lg:flex-row gap-14 lg:gap-20 items-start">
-          <div className="pd-img-enter w-full lg:w-[55%]">
+          <div className="pd-img-enter w-full lg:w-[55%] relative z-10">
             <ProductImageSection
               product={productItem}
               overrideMainImage={activeComboImage}
+              isAIProcessorSelected={isAIProcessorSelected}
             />
           </div>
-          <div className="pd-info-enter w-full lg:w-[45%] lg:sticky lg:top-28">
+          <div className="pd-info-enter w-full lg:w-[45%] lg:sticky lg:top-28 z-20">
             <ProductInfoPanel
-              product={product}
-              variants={product.variants}
-              personalizationRules={personalizationRules}
+              product={productItem}
+              personalizationRules={effectiveRules}
               quantity={quantity}
               setQuantity={setQuantity}
               selectedAccessories={selectedAccessories}
               setSelectedAccessories={setSelectedAccessories}
-              availableStock={availableStock}
             />
           </div>
         </div>
@@ -190,7 +199,7 @@ export default function ProductDetailClient({
         <ProductRelated
           products={related.map((p) => ({
             ...p,
-            availableStock: relatedStockMap[p.id],
+            availableStock: p.available,
           }))}
         />
       )}

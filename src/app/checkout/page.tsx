@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 import { PRIVATE_ROBOTS } from "@/constants/seo";
 
 export const metadata: Metadata = {
-  title: "Thanh toan",
-  description: "Hoan tat don hang va thanh toan.",
+  title: "Thanh toán",
+  description: "Hoàn tất đơn hàng và thanh toán.",
   robots: PRIVATE_ROBOTS,
   alternates: {
     canonical: "/checkout",
@@ -16,14 +16,10 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <>
-      <Header />
-      <div className="pt-24 pb-16 bg-[#FAFAFA] min-h-screen">
-        <Suspense fallback={null}>
-          <CheckoutClient />
-        </Suspense>
-      </div>
-      <Footer />
-    </>
+    <div className="bg-[#FAFAFA] min-h-screen">
+      <Suspense fallback={null}>
+        <CheckoutClient />
+      </Suspense>
+    </div>
   );
 }

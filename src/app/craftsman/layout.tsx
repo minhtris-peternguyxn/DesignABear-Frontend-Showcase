@@ -1,13 +1,5 @@
-import { type ReactNode } from "react";
-import { Metadata } from "next";
-import StaffLayout from "@/components/staff/StaffLayout";
-import { PRIVATE_ROBOTS } from "@/constants/seo";
+import CraftsmanLayout from "@/components/craftsman/CraftsmanLayout";
 
-export const metadata: Metadata = {
-  title: "Craftsman Portal",
-  robots: PRIVATE_ROBOTS,
-};
-
-export default function Layout({ children }: { children: ReactNode }) {
-  return <StaffLayout>{children}</StaffLayout>;
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <CraftsmanLayout>{children}</CraftsmanLayout>;
 }

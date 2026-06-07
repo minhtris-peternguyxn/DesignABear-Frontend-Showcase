@@ -7,6 +7,12 @@ import {
   IoGiftOutline,
 } from "react-icons/io5";
 import { PROFILE_STATS } from "@/data/profile";
+interface ProfileStatsProps {
+  ordersCount?: number;
+  favoritesCount?: number;
+  points?: number;
+  reviewsCount?: number;
+}
 
 const STAT_ICONS = {
   "Đơn hàng": IoBagOutline,
@@ -18,34 +24,54 @@ const STAT_ICONS = {
   React.ComponentType<{ className?: string; style?: React.CSSProperties }>
 >;
 
-export default function ProfileStats() {
+export default function ProfileStats({
+  ordersCount = 0,
+  favoritesCount = 0,
+  points = 1260,
+  reviewsCount = 0,
+}: ProfileStatsProps) {
+  const stats = [
+    { label: "Đơn hàng", value: ordersCount.toString(), color: "#17409A" },
+    { label: "Yêu thích", value: favoritesCount.toString(), color: "#FF6B9D" },
+    { label: "Điểm tích lũy", value: points.toLocaleString("vi-VN"), color: "#FFD93D" },
+    { label: "Đánh giá", value: reviewsCount.toString(), color: "#4ECDC4" },
+  ];
+
   return (
-    <div className="max-w-screen-2xl mx-auto px-8 md:px-16 mt-12 mb-10">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {PROFILE_STATS.map(({ label, value, color }) => {
-          const Icon = STAT_ICONS[label];
-          return (
-            <div
-              key={label}
-              className="ac bg-white rounded-2xl p-5 shadow-lg shadow-[#17409A]/8 flex items-center gap-4"
-            >
+    <div className="max-w-screen-2xl mx-auto px-8 md:px-16 mt-10 mb-10" style={{ fontFamily: "'Nunito', sans-serif" }}>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+        {stats
+          .filter((s) => s.label !== "Điểm tích lũy")
+          .map(({ label, value, color }) => {
+            const Icon = STAT_ICONS[label];
+            return (
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: color + "18" }}
+                key={label}
+                className="ac bg-white rounded-3xl p-6 shadow-sm border border-slate-50 flex items-center gap-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group relative overflow-hidden"
               >
-                {Icon && <Icon className="text-2xl" style={{ color }} />}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50/50 rounded-full opacity-40 translate-x-4 -translate-y-4 z-0 pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-all group-hover:scale-110 duration-300 relative z-10"
+                  style={{ backgroundColor: color + "15" }}
+                >
+                  {Icon && <Icon className="text-2xl" style={{ color }} />}
+                </div>
+
+                <div className="relative z-10">
+                  <p
+                    className={`font-black text-2xl md:text-3xl leading-none tracking-tight mb-1`}
+                    style={{ color }}
+                  >
+                    {value}
+                  </p>
+                  <p className="text-[#9CA3AF] text-xs font-bold tracking-wide uppercase">
+                    {label}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[#1A1A2E] font-black text-2xl leading-none">
-                  {value}
-                </p>
-                <p className="text-[#9CA3AF] text-xs font-semibold mt-1">
-                  {label}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
     </div>
   );

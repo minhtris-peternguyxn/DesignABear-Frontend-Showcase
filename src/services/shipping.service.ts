@@ -1,9 +1,13 @@
 import BaseApiService from "@/api/base";
-import { API_ENDPOINTS } from "@/constants";
+import { API_ENDPOINTS, API_BASE_URL } from "@/constants";
 import {
   CalculateShippingFeeRequest,
   ShippingFeeResponse,
+  SubmitGhtkExpressOrderRequest,
+  GhtkSubmitOrderResponse,
+  GhtkTrackingStatusResponse,
 } from "@/types/shipping";
+import { ApiResponse } from "@/types/responses";
 
 class ShippingService extends BaseApiService {
   /**
@@ -25,6 +29,28 @@ class ShippingService extends BaseApiService {
         withCredentials: false,
       },
     );
+  }
+  async submitExpressOrder(
+    request: SubmitGhtkExpressOrderRequest,
+  ): Promise<ApiResponse<GhtkSubmitOrderResponse>> {
+    return this.post<GhtkSubmitOrderResponse>(
+      `${API_ENDPOINTS.SHIPPING.BASE}/ghtk/orders/express`,
+      request,
+    );
+  }
+
+  async getTrackingStatus(
+    label: string,
+  ): Promise<ApiResponse<GhtkTrackingStatusResponse>> {
+    return this.get<GhtkTrackingStatusResponse>(
+      `${API_ENDPOINTS.SHIPPING.BASE}/ghtk/orders/${label}/tracking-status`,
+    );
+  }
+
+  getPrintLabelUrl(label: string): string {
+    const baseUrl = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const endpoint = API_ENDPOINTS.SHIPPING.BASE.startsWith('/') ? API_ENDPOINTS.SHIPPING.BASE : `/${API_ENDPOINTS.SHIPPING.BASE}`;
+    return `${baseUrl}${endpoint}/ghtk/orders/${label}/print-label`;
   }
 }
 

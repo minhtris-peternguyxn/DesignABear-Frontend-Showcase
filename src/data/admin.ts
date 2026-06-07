@@ -406,7 +406,6 @@ export interface ProductAdmin {
   badgeColor: string;
   category: "complete" | "bear" | "accessory";
   price: number;
-  priceRange?: string | null;
   stock: number;
   sold: number;
   rating: number;

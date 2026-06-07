@@ -20,6 +20,7 @@ import { StepPayment } from "./StepPayment";
 import { StepConfirm } from "./StepConfirm";
 import { SuccessScreen } from "./SuccessScreen";
 import { OrderSummary } from "./OrderSummary";
+import { ProcessingOverlay } from "./ProcessingOverlay";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
@@ -32,6 +33,7 @@ import { inventoryService } from "@/services/inventory.service";
 import { STORAGE_KEYS } from "@/constants";
 import type { Address } from "@/types";
 import { normalizePhoneNumber } from "@/utils/address";
+import { getComponentsForValidation } from "@/utils/stock_utils";
 /*  Main Component */
 export default function CheckoutClient() {
   const [step, setStep] = useState(1);
@@ -132,25 +134,9 @@ export default function CheckoutClient() {
             try {
               const parsed = JSON.parse(pendingOrder);
               if (parsed?.orderDetails?.orderId) {
-                await orderService.updateOrderStatus(
-                  parsed.orderDetails.orderId,
-                  {
-                    status: "CANCELLED",
-                    notes:
-                      cancel === "true"
-                        ? "Khách hàng hủy thanh toán"
-                        : `Thanh toán thất bại với trạng thái: ${status}`,
-                  },
-                );
-
-                // Reorder: Restore items to cart so user can try again easily
-                await orderService.reorder(parsed.orderDetails.orderId);
-                // Refresh page to populate cart and show items again
-                window.location.reload();
+                await orderService.cancelOrder(parsed.orderDetails.orderId);
               }
-            } catch (err) {
-              console.error("Failed to restore cart after cancellation:", err);
-            }
+            } catch {}
           }
           localStorage.removeItem(STORAGE_KEYS.PENDING_PAYMENT_ORDER);
           toast.error(
@@ -317,8 +303,8 @@ export default function CheckoutClient() {
             defaultForm.address = defAddr.line1 || "";
             defaultForm.wardName = defAddr.line2 || "";
             defaultForm.note = defAddr.label || "";
-            defaultForm.provinceName = defAddr.city || "";
-            defaultForm.districtName = defAddr.state || "";
+            defaultForm.provinceName = defAddr.state || "";
+            defaultForm.districtName = defAddr.city || "";
             setAddresses(addressRes.value);
 
             if (defAddr.addressId) {
@@ -365,8 +351,8 @@ export default function CheckoutClient() {
     const userId = userObj ? JSON.parse(userObj).id : null;
     const normalizedPhone = normalizePhoneNumber(form.phone);
 
-    const city = (form.provinceName || form.province).trim();
-    const state = (form.districtName || form.district).trim();
+    const city = (form.districtName || form.district).trim();
+    const state = (form.provinceName || form.province).trim();
 
     const normalizedCurrent = {
       fullName: form.name.trim().toLowerCase(),
@@ -429,7 +415,7 @@ export default function CheckoutClient() {
   };
 
   const calculateFee = async (addrId: string) => {
-    if (!addrId || isCalculatingShipping || totalItems === 0) return;
+    if (!addrId || isCalculatingShipping) return;
     const cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
     if (!cartId) return;
 
@@ -479,6 +465,8 @@ export default function CheckoutClient() {
 
   /**
    * Final validation of stock for all items in the cart before placing the order.
+   * "Deep Validation": Manually checks every component (Base + Accessories) 
+   * to ensure no hidden bottlenecks are missed by the server-side calculation.
    */
   const validateCartStock = async (): Promise<boolean> => {
     try {
@@ -487,28 +475,38 @@ export default function CheckoutClient() {
       const newErrors: Record<string, string> = {};
       let hasError = false;
 
-      // Check stock for each item in parallel
-      const stockResults = await Promise.all(
-        items.map(async (item) => {
-          const res = await inventoryService.getByProductId(item.product.id);
-          const totalAvailable =
-            res.isSuccess && res.value
-              ? res.value.reduce(
-                  (acc, inv) => acc + (inv.quantityAvailable || 0),
-                  0,
-                )
-              : 0;
-          return { item, totalAvailable };
-        }),
-      );
+      // 1. Collect all unique identities to check
+      const identitiesToCheck: { identityId: string; isAccessory: boolean }[] = [];
+      const itemComponentsMap = new Map<string, { identityId: string; isAccessory: boolean }[]>();
 
-      for (const { item, totalAvailable } of stockResults) {
-        if (totalAvailable <= 0) {
+      for (const item of items) {
+        const components = await getComponentsForValidation(item);
+        identitiesToCheck.push(...components);
+        itemComponentsMap.set(item.cartItemId, components);
+      }
+
+      // 2. Fetch all at once (Simulated Batch)
+      const uniqueIdentities = Array.from(
+        new Set(identitiesToCheck.map((i) => JSON.stringify(i))),
+      ).map((s) => JSON.parse(s));
+
+      const stockMap = await inventoryService.batchCheck(uniqueIdentities);
+
+      // 3. Validate each item against its components' bottlenecks
+      for (const item of items) {
+        const components = itemComponentsMap.get(item.cartItemId) || [];
+        let minAvailable = Infinity;
+
+        for (const comp of components) {
+          const available = stockMap[comp.identityId] ?? 0;
+          minAvailable = Math.min(minAvailable, available);
+        }
+
+        if (minAvailable === Infinity || minAvailable <= 0) {
           newErrors[item.cartItemId] = "Sản phẩm này hiện đã hết hàng.";
           hasError = true;
-        } else if (item.quantity > totalAvailable) {
-          newErrors[item.cartItemId] =
-            `Chênh lệch tồn kho: Chỉ còn ${totalAvailable} sản phẩm.`;
+        } else if (item.quantity > minAvailable) {
+          newErrors[item.cartItemId] = `Chỉnh còn ${minAvailable} sản phẩm sẵn có.`;
           hasError = true;
         }
       }
@@ -522,13 +520,15 @@ export default function CheckoutClient() {
       }
       return true;
     } catch (error) {
-      console.error("Stock validation error:", error);
+      console.error("Deep stock validation error:", error);
       toast.error("Không thể xác thực tồn kho. Vui lòng thử lại.");
       return false;
     } finally {
       setSubmitting(false);
     }
   };
+
+
 
   const goNext = useCallback(() => {
     if (submitting || isSubmittingRef.current) return;
@@ -584,13 +584,31 @@ export default function CheckoutClient() {
           setSubmitting(true);
 
           // ── Step 3: Skip manual reservation as backend handles it ──
-          console.log("[Checkout] Creating order (Backend will handle reservation)...");
+          console.log(
+            "[Checkout] Creating order (Backend will handle reservation)...",
+          );
 
           // ── Proceed with Order Creation ──
           const addrId = await getOrResolveAddressId();
 
           const cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
           if (!cartId) throw new Error("Chưa có giỏ hàng.");
+
+          // Release the old cart reservation so it doesn't double-reserve when creating the order
+          for (const item of items) {
+            try {
+              const components = await getComponentsForValidation(item);
+              for (const comp of components) {
+                try {
+                  await inventoryService.releaseReservation(comp.identityId, comp.isAccessory, item.quantity, "55555555-5555-5555-5555-555555555555");
+                } catch (releaseError) {
+                  console.error(`Failed to release reservation for component ${comp.identityId}`, releaseError);
+                }
+              }
+            } catch (err) {
+              console.error("Failed to resolve components for checkout item", err);
+            }
+          }
 
           const orderPayload = {
             userId: localStorage.getItem(STORAGE_KEYS.USER)
@@ -616,6 +634,7 @@ export default function CheckoutClient() {
           );
 
           if (orderRes.isSuccess && orderRes.value) {
+            localStorage.removeItem(STORAGE_KEYS.CART_ID);
             const orderId = orderRes.value.orderId;
             const safeDescription = `DAB ${orderRes.value.orderNumber}`.slice(
               0,
@@ -626,7 +645,7 @@ export default function CheckoutClient() {
               orderId,
               itemName: "Design A Bear",
               quantity: Math.max(1, totalItems),
-              amount: FINAL_TOTAL,
+              amount: orderRes.value.grandTotal, // Use the server's calculated total
               description: safeDescription,
             });
 
@@ -805,6 +824,7 @@ export default function CheckoutClient() {
   }
 
   return (
+    <>
     <div
       className="flex min-h-screen"
       style={{
@@ -1042,5 +1062,7 @@ export default function CheckoutClient() {
         </div>
       )}
     </div>
+    {submitting && step === 3 && <ProcessingOverlay />}
+    </>
   );
 }

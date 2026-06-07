@@ -12,7 +12,7 @@ import { type SortOption, type ProductsClientProps } from "@/types/products";
 import { useProductApi } from "@/hooks/useProductApi";
 import type { ProductListItem } from "@/types";
 import type { ProductCardProps } from "@/components/shared/ProductCard";
-import { inventoryService } from "@/services/inventory.service";
+import { useFavorite } from "@/contexts/FavoriteContext";
 
 const PAGE_SIZE = 12;
 
@@ -21,8 +21,9 @@ type UserVisibleProduct = ProductListItem & {
 };
 
 /* ── Map API item → ProductCardProps ── */
-function mapToCard(item: ProductListItem, stock?: number): ProductCardProps {
+function mapToCard(item: ProductListItem): ProductCardProps {
   const image = item.imageUrl || item.media?.[0]?.url || "/teddy_bear.png";
+  const stock = item.available;
 
   return {
     id: item.productId,
@@ -39,15 +40,17 @@ function mapToCard(item: ProductListItem, stock?: number): ProductCardProps {
 
 export default function ProductsClient({
   initialCategory,
+  initialSearch,
 }: ProductsClientProps) {
   const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearch || "");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   /* ── API state ── */
   const { getProducts, loading } = useProductApi();
+  const { favorites } = useFavorite();
   const [allItems, setAllItems] = useState<UserVisibleProduct[]>([]);
-  const [inventoryMap, setInventoryMap] = useState<Record<string, number>>({});
   const [pageIndex, setPageIndex] = useState(1);
 
   // Sync category từ URL
@@ -58,6 +61,13 @@ export default function ProductsClient({
     }
     setActiveCategory(initialCategory);
   }, [initialCategory]);
+
+  // Sync search từ URL
+  useEffect(() => {
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+    }
+  }, [initialSearch]);
 
   // Fetch một lần và chỉ giữ BASE_BEAR + COMPLETE_BEAR (ẩn ACCESSORY)
   const fetchPage = useCallback(async () => {
@@ -71,7 +81,7 @@ export default function ProductsClient({
           ...item,
           normalizedType: (item.productType || "").trim().toUpperCase(),
         }))
-        .filter((item) => item.normalizedType !== "ACCESSORY");
+        .filter((item) => item.normalizedType !== "ACCESSORY" && item.isActive);
 
       setAllItems(sanitized);
       setPageIndex(1);
@@ -92,6 +102,10 @@ export default function ProductsClient({
       list = list.filter((p) => p.normalizedType === "BASE_BEAR");
     } else if (activeCategory === "complete") {
       list = list.filter((p) => p.normalizedType === "COMPLETE_BEAR");
+    }
+
+    if (showFavoritesOnly) {
+      list = list.filter((p) => favorites.has(p.productId));
     }
 
     if (searchQuery.trim()) {
@@ -119,7 +133,7 @@ export default function ProductsClient({
       default:
         return list;
     }
-  }, [allItems, activeCategory, searchQuery, sortBy]);
+  }, [allItems, activeCategory, showFavoritesOnly, favorites, searchQuery, sortBy]);
 
   const totalPages = Math.max(
     1,
@@ -134,44 +148,8 @@ export default function ProductsClient({
     const start = (pageIndex - 1) * PAGE_SIZE;
     return filteredProducts
       .slice(start, start + PAGE_SIZE)
-      .map((item) => mapToCard(item, inventoryMap[item.productId]));
-  }, [filteredProducts, pageIndex, inventoryMap]);
-
-  // Sync inventory for visible items
-  useEffect(() => {
-    const visibleIds = filteredProducts
-      .slice((pageIndex - 1) * PAGE_SIZE, pageIndex * PAGE_SIZE)
-      .map((p) => p.productId);
-
-    if (visibleIds.length > 0) {
-      (async () => {
-        try {
-          const results = await Promise.all(
-            visibleIds.map(async (id) => {
-              const res = await inventoryService.getTotalAvailable(id);
-              return {
-                id,
-                total:
-                  res.isSuccess && res.value ? res.value.totalAvailable : 0,
-              };
-            }),
-          );
-
-          const newMap = { ...inventoryMap };
-          let changed = false;
-          results.forEach((r) => {
-            if (newMap[r.id] !== r.total) {
-              newMap[r.id] = r.total;
-              changed = true;
-            }
-          });
-          if (changed) setInventoryMap(newMap);
-        } catch (err) {
-          console.error("Failed to sync list inventory:", err);
-        }
-      })();
-    }
-  }, [pageIndex, filteredProducts.length]); // Only re-fetch on page/list change
+      .map((item) => mapToCard(item));
+  }, [filteredProducts, pageIndex]);
 
   const pageNumbers = useMemo(() => {
     const pages: number[] = [];
@@ -193,6 +171,8 @@ export default function ProductsClient({
         sortBy={sortBy}
         onSortChange={(s) => setSortBy(s as SortOption)}
         productCount={filteredProducts.length}
+        showFavoritesOnly={showFavoritesOnly}
+        onShowFavoritesChange={setShowFavoritesOnly}
       />
 
       {/* Loading skeleton */}

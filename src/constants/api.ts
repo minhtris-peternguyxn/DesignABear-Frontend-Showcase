@@ -32,7 +32,6 @@ export const API_ENDPOINTS = {
     GET_BY_ID: "/api/Orders/{orderId}",
     UPDATE_STATUS: "/api/Orders/{orderId}/status",
     CANCEL: "/api/Orders/{orderId}/cancel",
-    REORDER: "/api/Orders/{orderId}/reorder",
     GET_ALL: "/api/Orders",
   },
   PRODUCTS: {
@@ -112,6 +111,8 @@ export const API_ENDPOINTS = {
   },
   REPORTS: {
     REVENUE: "/api/Reports/revenue",
+    PAYROLL: "/api/Reports/payroll",
+    PAYROLL_ME: "/api/Reports/payroll/me",
   },
   PRODUCT_ISSUE_REPORTS: {
     BASE: "/api/ProductIssueReports",
@@ -124,21 +125,38 @@ export const API_ENDPOINTS = {
     REJECT: "/api/ProductIssueReports/{id}/reject",
   },
   SHIPPING: {
+    BASE: "/api/Shipping",
     CALCULATE_FEE: "/api/Shipping/calculate-fee",
   },
   INVENTORIES: {
     BASE: "/api/Inventories",
     BY_PRODUCT: "/api/Inventories/product/{productId}",
-    BY_ACCESSORY: "/api/Inventories/accessory/{accessoryId}",
-    TOTAL_AVAILABLE: "/api/Inventories/product/{productId}/total",
+    TOTAL: "/api/Inventories/total",
     ADJUST: "/api/Inventories/adjust",
     RESERVE: "/api/Inventories/reserve",
     RELEASE: "/api/Inventories/release",
-    BY_LOCATION_PRODUCT: "/api/Inventories/location/{locationId}/product/{productId}",
+    // Note: Legacy endpoints kept for compatibility if needed, 
+    // but preference is the unified /total and /adjust endpoints.
+    VARIANT_ADJUST: "/api/Inventories/variant/adjust",
+    ACCESSORY_ADJUST: "/api/Inventories/accessory/adjust",
+    BY_ACCESSORY: "/api/Inventories/accessory/{accessoryId}",
+    BY_LOCATION_PRODUCT:
+      "/api/Inventories/location/{locationId}/product/{productId}",
   },
   LOCATIONS: {
     BASE: "/api/Locations",
     BY_ID: "/api/Locations/{id}",
+  },
+  ACCESSORIES: {
+    GET_ALL: "/api/Accessories",
+    GET_BY_ID: "/api/Accessories/{id}",
+    GET_BY_PRODUCT: "/api/Accessories/product/{productId}",
+    SMART_CHIP: "/api/Accessories/smart-chip",
+    CREATE: "/api/Accessories",
+    UPDATE: "/api/Accessories/{id}",
+    DELETE: "/api/Accessories/{id}",
+    ADD_TO_PRODUCT: "/api/Accessories/matrix",
+    REMOVE_FROM_PRODUCT: "/api/Accessories/matrix",
   },
   FAVORITES: {
     BASE: "/api/Favorites",
@@ -146,24 +164,17 @@ export const API_ENDPOINTS = {
   },
   PRODUCTION_JOBS: {
     BASE: "/api/ProductionJobs",
-    BY_ID: "/api/ProductionJobs",
-    BY_STATUS: "/api/ProductionJobs/status",
-    BY_TECHNICIAN: "/api/ProductionJobs/technician",
-    CLAIM: "/api/ProductionJobs",
-    FINISH: "/api/ProductionJobs",
-    QC_RECEIVE: "/api/ProductionJobs",
-    INSPECT: "/api/ProductionJobs",
-    REWORK: "/api/ProductionJobs",
+    LOBBY: "/api/ProductionJobs/lobby",
   },
-  ACCESSORIES: {
-    GET_ALL: "/api/Accessories",
-    GET_BY_ID: "/api/Accessories",
-    GET_BY_PRODUCT: "/api/Accessories/product",
-    GET_SMART_CHIP: "/api/Accessories/smart-chip",
-    CREATE: "/api/Accessories",
-    UPDATE: "/api/Accessories",
-    DELETE: "/api/Accessories",
-    MATRIX: "/api/Accessories/matrix",
+  COLLECTIONS: {
+    GET_ALL: "/api/Collections",
+    GET_BY_ID: "/api/Collections/{id}",
+    GET_BY_SLUG: "/api/Collections/slug/{slug}",
+    CREATE: "/api/Collections",
+    UPDATE: "/api/Collections/{id}",
+    DELETE: "/api/Collections/{id}",
+    ADD_PRODUCT: "/api/Collections/matrix",
+    REMOVE_PRODUCT: "/api/Collections/matrix",
   },
 } as const;
 

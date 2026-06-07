@@ -53,7 +53,6 @@ export const PROFILE_REVIEWS: ProfileReview[] = [
 export const PROFILE_STATS: ProfileStat[] = [
   { label: "Đơn hàng", value: "3", color: "#17409A" },
   { label: "Yêu thích", value: "7", color: "#FF6B9D" },
-  { label: "Điểm tích lũy", value: "1.260", color: "#FFD93D" },
   { label: "Đánh giá", value: "2", color: "#4ECDC4" },
 ];
 
@@ -72,7 +71,7 @@ export const ROLE_CFG: Record<
 > = {
   admin: { label: "Quản trị viên", color: "#FF8C42" },
   staff: { label: "Nhân viên", color: "#7C5CFC" },
-  user: { label: "Thành viên", color: "#17409A" },
+  customer: { label: "Thành viên", color: "#17409A" },
 };
 
 export const SECURITY_ITEMS = [
