@@ -72,6 +72,7 @@ export default function LoginForm({
   };
 
   return (
+    <>
     <form onSubmit={handleSubmit} method="POST">
       <div className="field-item text-center mb-8">
         <h1 className="font-black text-[#1A1A2E] text-3xl leading-tight mb-2">
@@ -148,12 +149,13 @@ export default function LoginForm({
         </button>
       </div>
 
-      <DemoAccountsPopup 
-        onAutofill={(email, password) => {
-          setEmail(email);
-          setPassword(password);
-        }} 
-      />
     </form>
+    <DemoAccountsPopup 
+      onAutofill={(email, password) => {
+        setEmail(email);
+        setPassword(password);
+      }} 
+    />
+    </>
   );
 }
