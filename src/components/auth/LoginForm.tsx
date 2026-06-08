@@ -8,6 +8,7 @@ import { IoMailOutline, IoLockClosedOutline } from "react-icons/io5";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import DemoAccountsPopup from "./DemoAccountsPopup";
 
 interface LoginFormProps {
   onSwitchRegister: () => void;
@@ -146,6 +147,13 @@ export default function LoginForm({
           {t.auth.registerBtn}
         </button>
       </div>
+
+      <DemoAccountsPopup 
+        onAutofill={(email, password) => {
+          setEmail(email);
+          setPassword(password);
+        }} 
+      />
     </form>
   );
 }
