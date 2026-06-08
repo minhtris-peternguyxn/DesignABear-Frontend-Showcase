@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { 
   IoKeyOutline, 
@@ -105,8 +106,24 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
   const [errorMsg, setErrorMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const t = content[locale];
+
+  // Needed for createPortal — only render after mount on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close on ESC key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isOpen]);
 
   // Save auth state to session storage to avoid re-entering password on same session
   useEffect(() => {
@@ -148,26 +165,15 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
     setLocale(locale === "vi" ? "en" : "vi");
   };
 
-  return (
-    <>
-      {/* Floating Action Button (FAB) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#17409A] to-[#3B82F6] text-white font-bold rounded-full shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 cursor-pointer group"
+  const modalContent = isOpen ? (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md"
+      onClick={() => setIsOpen(false)}
+    >
+      <div
+        className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/60 rounded-3xl shadow-2xl shadow-black/30 overflow-hidden flex flex-col max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
       >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-        </span>
-        <IoKeyOutline className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-        <span className="text-sm tracking-wide font-fredoka">{t.floatingBtn}</span>
-      </button>
-
-      {/* Modal Overlay */}
-      {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md transition-opacity duration-300">
-          <div className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/60 rounded-3xl shadow-2xl shadow-black/30 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
             
             {/* Header / Language Switcher */}
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800/80 px-6 py-4">
@@ -356,9 +362,28 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
               </button>
             </div>
             
-          </div>
-        </div>
-      )}
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      {/* Floating Action Button (FAB) */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#17409A] to-[#3B82F6] text-white font-bold rounded-full shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 cursor-pointer group"
+      >
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+        </span>
+        <IoKeyOutline className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+        <span className="text-sm tracking-wide font-fredoka">{t.floatingBtn}</span>
+      </button>
+
+      {/* Portal modal to document.body to escape all stacking contexts */}
+      {mounted && createPortal(modalContent, document.body)}
     </>
   );
 }
