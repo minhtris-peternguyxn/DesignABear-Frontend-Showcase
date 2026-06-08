@@ -6,13 +6,13 @@ import { IoHeart, IoHeartOutline, IoTrashOutline, IoCartOutline } from "react-ic
 import { useFavorite } from "@/contexts/FavoriteContext";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/contexts/ToastContext";
-
-
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function WishlistTab() {
   const { favorites, items, loading, toggleFavorite } = useFavorite();
   const { addItem, openCart } = useCart();
   const toast = useToast();
+  const { locale, t } = useLanguage();
   const count = items.length;
 
   const handleAddToCart = async (item: any) => {
@@ -21,18 +21,18 @@ export default function WishlistTab() {
         {
           id: item.productId,
           name: item.productName,
-          description: item.productName || "Sản phẩm yêu thích",
+          description: item.productName || (locale === "vi" ? "Sản phẩm yêu thích" : "Favorite product"),
           price: item.productPrice,
           image: item.productImageUrl || "/teddy_bear.png",
-          badge: "Gấu bông",
+          badge: locale === "vi" ? "Gấu bông" : "Teddy Bear",
           badgeColor: "#17409A",
         },
         1
       );
-      toast.success("Đã thêm gấu bông vào giỏ hàng");
+      toast.success(t.productDetail.toasts.addedSuccess.replace("{name}", item.productName));
       openCart();
     } catch (err) {
-      toast.error("Không thể thêm vào giỏ hàng");
+      toast.error(t.productDetail.toasts.addedFailed);
     }
   };
 
@@ -40,7 +40,7 @@ export default function WishlistTab() {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center" style={{ fontFamily: "'Nunito', sans-serif" }}>
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#17409A] border-t-transparent mb-4" />
-        <p className="text-[#6B7280] font-semibold">Đang tải danh sách...</p>
+        <p className="text-[#6B7280] font-semibold">{locale === "vi" ? "Đang tải danh sách..." : "Loading list..."}</p>
       </div>
     );
   }
@@ -52,16 +52,16 @@ export default function WishlistTab() {
           <IoHeartOutline className="text-[#FF6B9D] text-4xl" />
         </div>
         <p className="text-[#1A1A2E] font-black text-2xl mb-2">
-          Bé chưa yêu thích món nào
+          {t.favorites.empty}
         </p>
         <p className="text-[#6B7280] text-base font-medium mb-8 max-w-xs mx-auto leading-relaxed">
-          Hãy dạo quanh cửa hàng và nhấn icon trái tim để lưu lại những chú gấu bé thích nhé!
+          {t.favorites.emptyDesc}
         </p>
         <Link
           href="/products"
           className="bg-[#17409A] text-white font-black text-base px-8 py-4 rounded-2xl transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5"
         >
-          Khám phá ngay
+          {locale === "vi" ? "Khám phá ngay" : "Explore Now"}
         </Link>
       </div>
     );
@@ -74,17 +74,17 @@ export default function WishlistTab() {
         <div>
           <h3 className="text-xl font-black text-[#1A1A2E] flex items-center gap-2">
             <IoHeart className="text-[#FF6B9D] text-2xl" />
-            Sản phẩm đã thích
+            {t.favorites.title}
           </h3>
           <p className="text-sm font-semibold text-[#6B7280] mt-1">
-            Bạn đã lưu {count} sản phẩm vào danh sách yêu thích
+            {t.favorites.itemsLiked.replace("{count}", String(count))}
           </p>
         </div>
         <Link
           href="/products"
           className="self-start md:self-center font-black text-sm bg-[#17409A] text-white px-6 py-3 rounded-2xl hover:bg-[#0E2A66] hover:shadow-lg transition-all text-center"
         >
-          Xem thêm sản phẩm
+          {locale === "vi" ? "Xem thêm sản phẩm" : "View more products"}
         </Link>
       </div>
 
@@ -99,7 +99,7 @@ export default function WishlistTab() {
             <button
               onClick={() => toggleFavorite(item.productId)}
               className="absolute top-4 right-4 z-10 w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-md text-[#6B7280] hover:text-[#FF6B9D] hover:scale-110 transition-all duration-200 border border-slate-100/50"
-              title="Bỏ yêu thích"
+              title={locale === "vi" ? "Bỏ yêu thích" : "Remove from favorites"}
             >
               <IoTrashOutline className="text-lg" />
             </button>
@@ -128,7 +128,7 @@ export default function WishlistTab() {
               </Link>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-[10px] font-black uppercase bg-[#F4F7FF] text-[#17409A] px-2.5 py-1 rounded-lg border border-slate-100">
-                  Gấu bông
+                  {locale === "vi" ? "Gấu bông" : "Teddy Bear"}
                 </span>
               </div>
             </div>
@@ -139,12 +139,12 @@ export default function WishlistTab() {
                 href={`/products/${item.productId}`}
                 className="flex-1 text-center bg-[#F4F7FF] hover:bg-[#E5E7EB] text-[#17409A] font-black text-xs py-3.5 rounded-2xl transition-all hover:shadow-md"
               >
-                Xem chi tiết
+                {locale === "vi" ? "Xem chi tiết" : "View details"}
               </Link>
               <button
                 onClick={() => handleAddToCart(item)}
                 className="w-12 bg-[#17409A] hover:bg-[#0E2A66] text-white flex items-center justify-center rounded-2xl hover:shadow-lg transition-all duration-200"
-                title="Thêm vào giỏ hàng"
+                title={locale === "vi" ? "Thêm vào giỏ hàng" : "Add to cart"}
               >
                 <IoCartOutline className="text-xl" />
               </button>

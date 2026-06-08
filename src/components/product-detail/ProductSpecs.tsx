@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -190,7 +191,35 @@ const SPEC_CARDS: Omit<SpecCard, "accent">[] = [
 ];
 
 export default function ProductSpecs({ accentColor }: Props) {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
+
+  const translatedSpecs = [
+    {
+      icon: <IconAIChip />,
+      title: t.productDetail.specs.aiChip,
+      value: t.productDetail.specs.aiChipValue,
+      sub: t.productDetail.specs.aiChipDesc,
+    },
+    {
+      icon: <IconLeaf />,
+      title: t.productDetail.specs.material,
+      value: t.productDetail.specs.materialValue,
+      sub: t.productDetail.specs.materialDesc,
+    },
+    {
+      icon: <IconBattery />,
+      title: t.productDetail.specs.battery,
+      value: t.productDetail.specs.batteryValue,
+      sub: t.productDetail.specs.batteryDesc,
+    },
+    {
+      icon: <IconDroplet />,
+      title: t.productDetail.specs.waterproof,
+      value: t.productDetail.specs.waterproofValue,
+      sub: t.productDetail.specs.waterproofDesc,
+    },
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -229,26 +258,23 @@ export default function ProductSpecs({ accentColor }: Props) {
               className="text-xs font-black tracking-[0.35em] uppercase mb-3"
               style={{ color: accentColor }}
             >
-              Thông số kỹ thuật
+              {t.productDetail.specs.title}
             </p>
             <h2
               className="text-4xl md:text-5xl font-black text-white leading-tight"
               style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Công nghệ đằng
-              <br />
-              sau mỗi chú gấu
+              {t.productDetail.specs.subtitle}
             </h2>
           </div>
           <p className="text-white/50 text-sm max-w-xs leading-relaxed">
-            Mỗi sản phẩm là sự kết hợp giữa công nghệ tiên tiến và vật liệu cao
-            cấp, được kiểm định nghiêm ngặt vì sự an toàn của bé.
+            {t.productDetail.specs.description}
           </p>
         </div>
 
         {/* Spec cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SPEC_CARDS.map(({ icon, title, value, sub }) => (
+          {translatedSpecs.map(({ icon, title, value, sub }, idx) => (
             <div
               key={title}
               className="spec-card group relative p-7 rounded-3xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 overflow-hidden"
@@ -258,7 +284,7 @@ export default function ProductSpecs({ accentColor }: Props) {
                 className="absolute -right-2 -bottom-4 text-8xl font-black pointer-events-none select-none leading-none"
                 style={{ color: "rgba(255,255,255,0.04)" }}
               >
-                {String(SPEC_CARDS.findIndex((s) => s.title === title) + 1)}
+                {String(idx + 1)}
               </span>
 
               {/* Accent top border */}

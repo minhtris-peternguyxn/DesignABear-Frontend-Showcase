@@ -2,8 +2,10 @@ import Link from "next/link";
 import { GiBearFace, GiPawPrint } from "react-icons/gi";
 import { IoChatbubblesOutline, IoCallOutline } from "react-icons/io5";
 import ConnectPhraseReveal from "./ConnectPhraseReveal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ConnectHero() {
+  const { locale, t } = useLanguage();
   return (
     <section className="bg-[#F4F7FF] pt-30 pb-16 md:pt-40 md:pb-20">
       <div className="max-w-screen-2xl mx-auto px-8 md:px-16">
@@ -17,23 +19,20 @@ export default function ConnectHero() {
             <div>
               <span className="connect-chapter-title connect-reveal inline-flex items-center gap-2 rounded-full px-4 py-2 bg-[#17409A]/10 text-[#17409A] text-sm font-bold">
                 <GiBearFace className="text-lg" />
-                Cổng kết nối cộng đồng
+                {t.connect.hero.badge}
               </span>
 
               <h1 className="mt-5 text-4xl md:text-5xl lg:text-6xl font-black text-[#17409A] leading-tight">
                 <span className="block">
-                  <ConnectPhraseReveal text="Kết nối phụ huynh, giáo viên" />
+                  <ConnectPhraseReveal text={t.connect.hero.headingLine1} />
                 </span>
                 <span className="block">
-                  <ConnectPhraseReveal text="và đội ngũ Design a Bear" />
+                  <ConnectPhraseReveal text={t.connect.hero.headingLine2} />
                 </span>
               </h1>
 
-              <p className="connect-ac mt-6 max-w-3xl text-base md:text-lg text-[#6B7280] leading-relaxed">
-                Đây là nơi mọi phản hồi, câu hỏi và ý tưởng được lắng nghe.
-                Chúng tôi xây dựng một không gian trao đổi văn minh, ấm áp và
-                chuyên sâu để hành trình học tập của bé luôn được đồng hành trọn
-                vẹn.
+              <p className="connect-ac mt-6 max-w-3xl text-base md:text-lg text-[#6B7280] leading-relaxed whitespace-pre-line">
+                {t.connect.hero.description}
               </p>
 
               <div className="connect-ac mt-7 flex flex-wrap gap-3">
@@ -41,28 +40,28 @@ export default function ConnectHero() {
                   href="/products"
                   className="inline-flex items-center justify-center min-h-11 px-6 py-3 rounded-2xl bg-[#17409A] text-white font-extrabold hover:bg-[#0E2A66] transition-colors"
                 >
-                  Khám phá sản phẩm
+                  {t.connect.hero.exploreBtn}
                 </Link>
                 <a
                   href="#form-ket-noi"
                   className="inline-flex items-center justify-center min-h-11 px-6 py-3 rounded-2xl border-2 border-[#17409A] text-[#17409A] font-extrabold hover:bg-[#17409A] hover:text-white transition-colors"
                 >
-                  Gửi lời nhắn
+                  {locale === "vi" ? "Gửi lời nhắn" : "Send Message"}
                 </a>
               </div>
             </div>
 
             <div className="connect-ac rounded-3xl bg-[#17409A] text-white p-6 md:p-7 shadow-xl">
               <p className="text-xs uppercase tracking-[0.18em] text-white/70 font-bold">
-                Trực tuyến nhanh
+                {locale === "vi" ? "Trực tuyến nhanh" : "Quick Contact"}
               </p>
               <div className="mt-4 space-y-3">
                 <div className="rounded-2xl bg-white/10 border border-white/20 p-4 flex items-start gap-3">
                   <IoChatbubblesOutline className="text-2xl mt-0.5" />
                   <div>
-                    <p className="font-bold">Chat tư vấn</p>
+                    <p className="font-bold">{locale === "vi" ? "Chat tư vấn" : "Live Chat"}</p>
                     <p className="text-sm text-white/80">
-                      Phản hồi trong 5-10 phút giờ hành chính
+                      {t.connect.hero.badgeResponse}
                     </p>
                   </div>
                 </div>
@@ -71,7 +70,7 @@ export default function ConnectHero() {
                   <div>
                     <p className="font-bold">Hotline 1900 2686</p>
                     <p className="text-sm text-white/80">
-                      Hỗ trợ nhanh các vấn đề giao hàng và kỹ thuật
+                      {t.connect.hero.badgeSupport}
                     </p>
                   </div>
                 </div>

@@ -13,6 +13,7 @@ import { useProductApi } from "@/hooks/useProductApi";
 import type { ProductListItem } from "@/types";
 import type { ProductCardProps } from "@/components/shared/ProductCard";
 import { useFavorite } from "@/contexts/FavoriteContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const PAGE_SIZE = 12;
 
@@ -42,6 +43,7 @@ export default function ProductsClient({
   initialCategory,
   initialSearch,
 }: ProductsClientProps) {
+  const { t } = useLanguage();
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState(initialSearch || "");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
@@ -201,7 +203,7 @@ export default function ProductsClient({
                   className="rounded-xl px-3 py-2 text-xs font-black text-[#17409A] transition-colors hover:bg-[#F4F7FF] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 >
-                  Trước
+                  {t.products.grid.prev}
                 </button>
 
                 {pageNumbers[0] > 1 && (
@@ -262,7 +264,7 @@ export default function ProductsClient({
                   className="rounded-xl px-3 py-2 text-xs font-black text-[#17409A] transition-colors hover:bg-[#F4F7FF] disabled:cursor-not-allowed disabled:text-[#9CA3AF]"
                   style={{ fontFamily: "'Nunito', sans-serif" }}
                 >
-                  Sau
+                  {t.products.grid.next}
                 </button>
               </div>
 
@@ -270,7 +272,7 @@ export default function ProductsClient({
                 className="mt-3 text-center text-xs font-semibold text-[#6B7280]"
                 style={{ fontFamily: "'Nunito', sans-serif" }}
               >
-                Trang {pageIndex}/{totalPages}
+                {t.products.grid.page} {pageIndex}/{totalPages}
               </p>
             </div>
           )}

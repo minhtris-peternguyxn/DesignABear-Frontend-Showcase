@@ -11,14 +11,11 @@ import {
 import gsap from "gsap";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /* ────────────────────────────────────────────
    CartDrawer — Premium right-side drawer
    ──────────────────────────────────────────── */
-
-function formatPrice(price: number) {
-  return price.toLocaleString("vi-VN") + " đ";
-}
 
 /* Bear paw SVG decoration */
 function PawPrint({
@@ -47,7 +44,8 @@ function PawPrint({
 }
 
 /* Empty cart illustration */
-function EmptyState() {
+function EmptyState({ t }: { t: any }) {
+  const emptyPromptLines = t.cart.emptyPrompt.split("\n");
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-8 py-16 text-center">
       <div
@@ -102,12 +100,16 @@ function EmptyState() {
           className="text-xl font-black mb-2"
           style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
         >
-          Giỏ hàng trống!
+          {t.cart.empty}!
         </p>
         <p className="text-sm leading-relaxed" style={{ color: "#6B7280" }}>
-          Bé chưa chọn được chú gấu nào cả.
-          <br />
-          Hãy khám phá bộ sưu tập nhé!
+          {emptyPromptLines[0]}
+          {emptyPromptLines[1] && (
+            <>
+              <br />
+              {emptyPromptLines[1]}
+            </>
+          )}
         </p>
       </div>
       <Link
@@ -119,7 +121,7 @@ function EmptyState() {
           fontFamily: "'Nunito', sans-serif",
         }}
       >
-        Khám phá ngay
+        {t.cart.exploreNow}
         <IoArrowForward className="text-base" />
       </Link>
     </div>
@@ -127,6 +129,7 @@ function EmptyState() {
 }
 
 export default function CartDrawer() {
+  const { locale, t } = useLanguage();
   const {
     items,
     removeItem,
@@ -140,6 +143,13 @@ export default function CartDrawer() {
   const drawerRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<HTMLDivElement>(null);
+
+  const formatPrice = (price: number) => {
+    return (
+      price.toLocaleString(locale === "vi" ? "vi-VN" : "en-US") +
+      (locale === "vi" ? " đ" : " VND")
+    );
+  };
 
   const animateOpen = useCallback(() => {
     const tl = gsap.timeline();
@@ -213,7 +223,7 @@ export default function CartDrawer() {
           backdropFilter: "blur(4px)",
         }}
         onClick={animateClose}
-        aria-label="Đóng giỏ hàng"
+        aria-label={t.cart.closeCart}
       />
 
       <div
@@ -244,13 +254,13 @@ export default function CartDrawer() {
                 className="text-xl font-black"
                 style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
               >
-                Giỏ hàng
+                {t.cart.drawerTitle}
               </h2>
             </div>
             <p className="text-xs font-bold" style={{ color: "#6B7280" }}>
               {totalItems === 0
-                ? "Chưa có sản phẩm nào"
-                : `${totalItems} sản phẩm trong giỏ`}
+                ? t.cart.noItems
+                : t.cart.itemsInCart.replace("{count}", String(totalItems))}
             </p>
           </div>
 
@@ -258,7 +268,7 @@ export default function CartDrawer() {
             onClick={animateClose}
             className="relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 shrink-0"
             style={{ backgroundColor: "#F4F7FF", color: "#1A1A2E" }}
-            aria-label="Đóng giỏ hàng"
+            aria-label={t.cart.closeCart}
           >
             <IoCloseOutline className="text-xl" />
           </button>
@@ -266,7 +276,7 @@ export default function CartDrawer() {
 
         <div ref={itemsRef} className="flex-1 overflow-y-auto">
           {items.length === 0 ? (
-            <EmptyState />
+            <EmptyState t={t} />
           ) : (
             <div className="p-4 space-y-3">
               {items.map((item) => (
@@ -331,7 +341,7 @@ export default function CartDrawer() {
                             {item.sizeTag && (
                               <div className="flex items-center gap-1.5">
                                 <span className="text-[9px] font-black uppercase tracking-wider text-[#9CA3AF]">
-                                  Size:
+                                  {t.cart.sizeLabel}
                                 </span>
                                 <span className="text-[11px] font-black text-[#17409A]">
                                   {item.sizeTag}{" "}
@@ -347,7 +357,7 @@ export default function CartDrawer() {
                               item.accessories.length > 0 && (
                                 <div className="flex flex-col gap-1">
                                   <span className="text-[9px] font-black uppercase tracking-wider text-[#9CA3AF]">
-                                    Phụ kiện:
+                                    {t.cart.accessoryLabel}
                                   </span>
                                   <div className="space-y-0.5">
                                     {item.accessories.map((acc, idx) => (
@@ -372,16 +382,15 @@ export default function CartDrawer() {
                           <div className="mt-1">
                             {item.availableStock <= 0 ? (
                               <p className="text-[10px] font-bold text-[#FF6B9D] animate-pulse">
-                                Sản phẩm hiện đã hết hàng
+                                {t.cart.outOfStockAlert}
                               </p>
                             ) : item.quantity > item.availableStock ? (
                               <p className="text-[10px] font-bold text-[#FF8C42]">
-                                Chỉ còn {item.availableStock} sản phẩm sẵn có
+                                {t.cart.stockAvailable.replace("{count}", String(item.availableStock))}
                               </p>
                             ) : item.availableStock < 5 ? (
                               <p className="text-[10px] font-bold text-[#FF8C42]">
-                                Sắp hết hàng: Chỉ còn {item.availableStock}{" "}
-                                chiếc
+                                {t.cart.stockLow.replace("{count}", String(item.availableStock))}
                               </p>
                             ) : null}
                           </div>
@@ -394,7 +403,7 @@ export default function CartDrawer() {
                         }
                         className="shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100 hover:scale-110"
                         style={{ backgroundColor: "#FFF0F0", color: "#FF6B6B" }}
-                        aria-label="Xóa sản phẩm"
+                        aria-label={t.cart.deleteItem}
                       >
                         <IoTrashOutline className="text-sm" />
                       </button>
@@ -426,7 +435,7 @@ export default function CartDrawer() {
                             color: "#17409A",
                             boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
                           }}
-                          aria-label="Giảm số lượng"
+                          aria-label={t.cart.decreaseQty}
                         >
                           −
                         </button>
@@ -452,7 +461,7 @@ export default function CartDrawer() {
                               : ""
                           }`}
                           style={{ backgroundColor: "#17409A", color: "white" }}
-                          aria-label="Tăng số lượng"
+                          aria-label={t.cart.increaseQty}
                         >
                           +
                         </button>
@@ -482,7 +491,7 @@ export default function CartDrawer() {
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: "#6B7280" }} className="font-semibold">
-                  Tạm tính
+                  {t.cart.subtotal}
                 </span>
                 <span className="font-bold" style={{ color: "#1A1A2E" }}>
                   {formatPrice(totalPrice)}
@@ -490,10 +499,10 @@ export default function CartDrawer() {
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span style={{ color: "#6B7280" }} className="font-semibold">
-                  Vận chuyển
+                  {t.cart.shipping}
                 </span>
                 <span className="font-bold" style={{ color: "#1A1A2E" }}>
-                  Tính khi thanh toán
+                  {t.cart.shippingCalc}
                 </span>
               </div>
             </div>
@@ -506,7 +515,7 @@ export default function CartDrawer() {
                 className="font-black text-base"
                 style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
               >
-                Tổng cộng
+                {t.cart.total}
               </span>
               <span
                 className="font-black text-xl"
@@ -534,7 +543,7 @@ export default function CartDrawer() {
                 fontFamily: "'Nunito', sans-serif",
               }}
             >
-              Thanh toán ngay
+              {t.cart.checkoutNow}
               <IoArrowForward className="text-lg" />
             </Link>
 
@@ -543,7 +552,7 @@ export default function CartDrawer() {
               className="w-full py-2.5 rounded-2xl font-bold text-sm transition-all duration-200 hover:bg-[#F4F7FF]"
               style={{ color: "#6B7280", border: "1.5px solid #E5E7EB" }}
             >
-              Tiếp tục mua sắm
+              {t.cart.continueShopping}
             </button>
           </div>
         )}

@@ -11,6 +11,7 @@ import { useProductDetailApi } from "@/hooks/useProductDetailApi";
 import { useReviewApi } from "@/hooks/useReviewApi";
 import type { ProductReview } from "@/types";
 import { formatDateTime } from "@/utils/date";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type StatusStyle = { label: string; fg: string; bg: string };
 
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export default function ReviewsTab({ initialReviews = [] }: Props) {
+  const { locale, t } = useLanguage();
   const { user } = useAuth();
   const { getProductById } = useProductDetailApi();
   const { getUserReviews, updateReview, deleteReview, loading, error } =
@@ -93,7 +95,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
         nextMap[result.value.productId] = result.value.name;
       } else {
         const pid = missingIds[idx];
-        nextMap[pid] = `Sản phẩm #${pid.slice(-6)}`;
+        nextMap[pid] = t.profile.reviews.productNoName.replace("{id}", pid.slice(-6).toUpperCase());
       }
     });
 
@@ -151,7 +153,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
   };
 
   const handleDelete = async (review: ProductReview) => {
-    const accepted = window.confirm("Bạn có chắc muốn xóa đánh giá này?");
+    const accepted = window.confirm(t.profile.reviews.deleteConfirm);
     if (!accepted) return;
 
     setActionLoadingId(review.reviewId);
@@ -169,24 +171,24 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[#1A1A2E] font-black text-base mb-1">
-        Đánh giá của bạn
+        {t.profile.reviews.title}
       </p>
 
       {loading && reviews.length === 0 && (
         <div className="bg-[#F8F9FF] rounded-2xl p-6 text-sm text-[#6B7280] text-center">
-          Đang tải danh sách đánh giá...
+          {t.profile.reviews.loading}
         </div>
       )}
 
       {error && reviews.length === 0 && (
         <div className="bg-[#FFF1F5] border border-[#FF6B9D33] rounded-2xl p-6 text-sm text-[#C43D6B]">
-          Không thể tải đánh giá: {error}
+          {t.profile.reviews.error.replace("{error}", error)}
         </div>
       )}
 
       {!loading && sortedReviews.length === 0 && !error && (
         <div className="bg-[#F8F9FF] rounded-2xl p-6 text-sm text-[#6B7280] text-center">
-          Bạn chưa có đánh giá nào.
+          {t.profile.reviews.emptyList}
         </div>
       )}
 
@@ -196,6 +198,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
           fg: "#17409A",
           bg: "#17409A18",
         };
+        const displayStatus = t.profile.reviews.statuses[r.status as keyof typeof t.profile.reviews.statuses] || statusStyle.label;
 
         const isEditable = canModifyReview(r.status);
         const isEditing = editingReviewId === r.reviewId;
@@ -207,7 +210,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                 <p className="text-[#1A1A2E] font-bold text-sm">
                   {productNameMap[r.productId] || (
                     <span className="text-[#9CA3AF] animate-pulse">
-                      Đang tải tên sản phẩm...
+                      {t.profile.reviews.productNameLoading}
                     </span>
                   )}
                 </p>
@@ -229,7 +232,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                   backgroundColor: statusStyle.bg,
                 }}
               >
-                {statusStyle.label}
+                {displayStatus}
               </span>
             </div>
 
@@ -241,7 +244,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                   onChange={(e) => setEditTitle(e.target.value)}
                   maxLength={120}
                   className="w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm font-semibold text-[#1A1A2E]"
-                  placeholder="Tiêu đề đánh giá"
+                  placeholder={t.profile.reviews.titlePlaceholder}
                 />
                 <textarea
                   value={editBody}
@@ -249,7 +252,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                   rows={3}
                   maxLength={500}
                   className="w-full rounded-xl border border-[#E5E7EB] px-3 py-2 text-sm font-semibold text-[#4B5563] resize-none"
-                  placeholder="Nội dung đánh giá"
+                  placeholder={t.profile.reviews.bodyPlaceholder}
                 />
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }).map((_, idx) => {
@@ -278,7 +281,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                     disabled={actionLoadingId === r.reviewId}
                     className="px-4 py-2 rounded-xl text-xs font-black bg-[#17409A] text-white disabled:opacity-50"
                   >
-                    Lưu
+                    {t.profile.reviews.saveBtn}
                   </button>
                   <button
                     type="button"
@@ -286,7 +289,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                     disabled={actionLoadingId === r.reviewId}
                     className="px-4 py-2 rounded-xl text-xs font-black border border-[#D1D5DB] text-[#6B7280]"
                   >
-                    Hủy
+                    {t.profile.reviews.cancelBtn}
                   </button>
                 </div>
               </div>
@@ -311,7 +314,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                             AD
                           </div>
                           <p className="text-[11px] font-black text-[#17409A] uppercase tracking-wider">
-                            Phản hồi từ quản trị viên
+                            {t.profile.reviews.replyTitle}
                           </p>
                           <span className="text-[10px] text-[#9CA3AF] font-semibold ml-auto">
                             {formatDateTime(reply.createdAt)}
@@ -332,7 +335,7 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                     onClick={() => startEdit(r)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black border border-[#D7DEEF] text-[#17409A] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <IoCreateOutline className="text-sm" /> Sửa
+                    <IoCreateOutline className="text-sm" /> {t.profile.reviews.editBtn}
                   </button>
                   <button
                     type="button"
@@ -340,11 +343,11 @@ export default function ReviewsTab({ initialReviews = [] }: Props) {
                     onClick={() => void handleDelete(r)}
                     className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black border border-[#FFD2E1] text-[#C43D6B] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <IoTrashOutline className="text-sm" /> Xóa
+                    <IoTrashOutline className="text-sm" /> {t.profile.reviews.deleteBtn}
                   </button>
                   {!isEditable && (
                     <span className="text-[11px] font-semibold text-[#9CA3AF]">
-                      Trạng thái này không thể sửa/xóa
+                      {t.profile.reviews.modifyError}
                     </span>
                   )}
                 </div>

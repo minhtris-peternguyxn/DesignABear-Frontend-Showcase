@@ -14,6 +14,7 @@ import { orderService } from "@/services/order.service";
 import { formatDateTime } from "@/utils/date";
 import type { FulfillmentResponse } from "@/types/responses";
 import { MdLocalShipping, MdAutorenew } from "react-icons/md";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const STATUS_STYLE: Record<
   string,
@@ -32,16 +33,18 @@ const STATUS_STYLE: Record<
 
 const BILLABLE_STATUSES = new Set(["PAID", "PROCESSING", "PRINTING", "READY_FOR_PICKUP", "SHIPPING", "COMPLETED"]);
 
-function formatMoney(amount: number, currency: string) {
-  const locale = currency === "USD" ? "en-US" : "vi-VN";
+function formatMoney(amount: number, currency?: string | null, localeCode?: string) {
+  const finalCurrency = currency || "VND";
+  const locale = localeCode || (finalCurrency === "USD" ? "en-US" : "vi-VN");
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency,
+    currency: finalCurrency,
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 export default function OrdersTab() {
+  const { locale, t } = useLanguage();
   const { user } = useAuth();
   const { loading, error, getOrdersByUserId, getOrderById } = useOrderApi();
 
@@ -205,11 +208,11 @@ export default function OrdersTab() {
   const getPipelineSteps = (order: Order) => {
     const status = order.status?.toUpperCase();
     return [
-      { label: "Chờ duyệt", completed: true },
-      { label: "Chế tác", active: ["PROCESSING", "PRINTING"].includes(status), completed: ["READY_FOR_PICKUP", "SHIPPING", "COMPLETED"].includes(status) },
-      { label: "Kiểm định", active: status === "READY_FOR_PICKUP", completed: ["SHIPPING", "COMPLETED"].includes(status) },
-      { label: "Đang giao", active: status === "SHIPPING", completed: status === "COMPLETED" },
-      { label: "Hoàn thành", active: status === "COMPLETED", completed: status === "COMPLETED" },
+      { label: t.profile.orders.pipeline.pending, completed: true },
+      { label: t.profile.orders.pipeline.processing, active: ["PROCESSING", "PRINTING"].includes(status), completed: ["READY_FOR_PICKUP", "SHIPPING", "COMPLETED"].includes(status) },
+      { label: t.profile.orders.pipeline.ready, active: status === "READY_FOR_PICKUP", completed: ["SHIPPING", "COMPLETED"].includes(status) },
+      { label: t.profile.orders.pipeline.shipping, active: status === "SHIPPING", completed: status === "COMPLETED" },
+      { label: t.profile.orders.pipeline.completed, active: status === "COMPLETED", completed: status === "COMPLETED" },
     ];
   };
 
@@ -217,40 +220,40 @@ export default function OrdersTab() {
     <div className="flex flex-col gap-6" style={{ fontFamily: "'Nunito', sans-serif" }}>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
-          <p className="text-[#1A1A2E] font-black text-2xl tracking-tight">Lịch sử đơn hàng</p>
-          <p className="text-slate-400 font-medium text-xs mt-0.5">Theo dõi chi tiết các đơn hàng của bạn</p>
+          <p className="text-[#1A1A2E] font-black text-2xl tracking-tight">{t.profile.orders.title}</p>
+          <p className="text-slate-400 font-medium text-xs mt-0.5">{t.profile.orders.subtitle}</p>
         </div>
         <div className="flex items-center gap-6 flex-wrap">
           <div className="bg-[#17409A]/5 border border-[#17409A]/10 px-5 py-2.5 rounded-2xl">
-            <span className="text-xs font-black text-[#1A1A2E]/50 uppercase tracking-wider block mb-0.5">Tổng đã chi</span>
+            <span className="text-xs font-black text-[#1A1A2E]/50 uppercase tracking-wider block mb-0.5">{t.profile.orders.totalSpent}</span>
             <span className="text-lg font-black text-[#17409A]">
-              {formatMoney(totalSpent, "VND")}
+              {formatMoney(totalSpent, "VND", locale)}
             </span>
           </div>
           <Link
             href="/products"
             className="text-[#17409A] bg-[#F4F7FF] px-5 py-3 rounded-2xl text-xs font-black hover:bg-[#17409A] hover:text-white transition-all tracking-wider uppercase shadow-sm"
           >
-            Mua thêm →
+            {t.profile.orders.buyMore}
           </Link>
         </div>
       </div>
 
       {loading && orders.length === 0 && (
         <div className="bg-[#F8F9FF] rounded-3xl p-12 text-center text-sm font-semibold text-[#6B7280]">
-          Đang tải lịch sử mua hàng...
+          {t.profile.orders.loading}
         </div>
       )}
 
       {error && orders.length === 0 && (
         <div className="bg-[#FFF1F5] border border-[#FF6B9D33] rounded-3xl p-8 text-sm font-semibold text-[#C43D6B]">
-          Không thể tải lịch sử đơn hàng: {error}
+          {t.profile.orders.error.replace("{error}", error)}
         </div>
       )}
 
       {!loading && orders.length === 0 && !error && (
         <div className="bg-[#F8F9FF] rounded-3xl p-12 text-center text-sm font-semibold text-[#6B7280]">
-          Bạn chưa có đơn hàng nào.
+          {t.profile.orders.noOrders}
         </div>
       )}
 
@@ -258,10 +261,11 @@ export default function OrdersTab() {
         {pagedOrders.map((order) => {
           const normalizedStatus = order.status?.toUpperCase() || "";
           const st = STATUS_STYLE[normalizedStatus] ?? {
-            label: "Trạng thái không xác định",
+            label: t.profile.orders.statuses.unknown,
             color: "#17409A",
             bg: "#17409A15",
           };
+          const displayStatus = t.profile.orders.statuses[normalizedStatus as keyof typeof t.profile.orders.statuses] || st.label;
           const firstItem = order.orderItems[0];
 
           const firstItemName =
@@ -270,7 +274,7 @@ export default function OrdersTab() {
             firstItem?.productionJobs?.[0]?.productName ||
             firstItem?.productNameSnapshot ||
             firstItem?.productName ||
-            "Sản phẩm không có tên";
+            t.profile.orders.productNoName;
 
           const firstItemImage =
             firstItem?.buildDetails?.baseProductImageUrl ||
@@ -312,7 +316,7 @@ export default function OrdersTab() {
                     <p className="text-slate-500 text-xs md:text-sm font-bold mt-1 max-w-md truncate">
                       {firstItemName}
                       {order.orderItems.length > 1
-                        ? ` +${order.orderItems.length - 1} sản phẩm khác`
+                        ? t.profile.orders.moreItems.replace("{count}", String(order.orderItems.length - 1))
                         : ""}
                     </p>
                     <div className="flex items-center gap-2 mt-2.5 flex-wrap">
@@ -323,10 +327,10 @@ export default function OrdersTab() {
                         className="text-[10px] font-black px-3.5 py-1.5 rounded-full uppercase tracking-wider shadow-sm"
                         style={{ color: st.color, backgroundColor: st.bg }}
                       >
-                        {st.label}
+                        {displayStatus}
                       </span>
                       <span className="text-[10px] font-black px-3.5 py-1.5 rounded-full bg-[#17409A10] text-[#17409A] uppercase tracking-wider">
-                        {order.orderItems.length} sản phẩm
+                        {t.profile.orders.itemsCount.replace("{count}", String(order.orderItems.length))}
                       </span>
                     </div>
                   </div>
@@ -334,10 +338,10 @@ export default function OrdersTab() {
 
                 <div className="text-left md:text-right shrink-0 flex flex-col justify-between h-full md:items-end">
                   <p className="text-[#17409A] font-black text-xl md:text-2xl tracking-tight">
-                    {formatMoney(order.grandTotal, order.currency)}
+                    {formatMoney(order.grandTotal, order.currency, locale)}
                   </p>
                   <span className="text-slate-400 font-bold text-xs mt-1 md:mt-0 flex items-center gap-1 group">
-                    Xem chi tiết đơn hàng
+                    {t.profile.orders.viewDetailBtn}
                     <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                   </span>
                 </div>
@@ -347,7 +351,7 @@ export default function OrdersTab() {
                 <div className="mt-6 pt-6 border-t border-slate-100 space-y-6 animate-in slide-in-from-top-2 duration-300">
                   {detailLoadingId === order.orderId && (
                     <p className="text-xs text-[#9CA3AF] font-bold">
-                      Đang tải chi tiết đơn hàng...
+                      {t.profile.orders.loadingDetails}
                     </p>
                   )}
 
@@ -358,7 +362,7 @@ export default function OrdersTab() {
                         <div className="space-y-2.5">
                           <p className="text-[#6B7280]">
                             <span className="font-black text-[#1A1A2E] text-xs block mb-0.5">
-                              Mã đơn hàng
+                              {t.profile.orders.orderId}
                             </span>
                             <span className="text-sm font-bold text-slate-700">
                               {formatShortOrderCode(detail.orderNumber || detail.orderId)}
@@ -366,37 +370,41 @@ export default function OrdersTab() {
                           </p>
                           <p className="text-[#6B7280]">
                             <span className="font-black text-[#1A1A2E] text-xs block mb-0.5">
-                              Ghi chú đơn hàng
+                              {t.profile.orders.note}
                             </span>
                             <span className="text-slate-600 font-semibold italic text-sm">
-                              {detail.notes || "Không có ghi chú"}
+                              {detail.notes || t.profile.orders.notesEmpty}
                             </span>
                           </p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t md:border-t-0 md:border-l border-slate-200/50 pt-2.5 md:pt-0 md:pl-4">
                           <p className="text-[#6B7280] flex justify-between">
-                            <span className="font-bold text-[#1A1A2E]">Tạm tính:</span>
+                            <span className="font-bold text-[#1A1A2E]">{t.profile.orders.subtotal}:</span>
                             <span className="font-semibold text-slate-600">
-                              {formatMoney(detail.subtotal, detail.currency)}
+                              {formatMoney(detail.subtotal, detail.currency, locale)}
                             </span>
                           </p>
                           <p className="text-[#6B7280] flex justify-between">
-                            <span className="font-bold text-[#1A1A2E]">Phí ship:</span>
+                            <span className="font-bold text-[#1A1A2E]">
+                              {t.profile.orders.shippingFee}:
+                            </span>
                             <span className="font-semibold text-slate-600">
-                              {formatMoney(detail.shippingTotal, detail.currency)}
+                              {formatMoney(detail.shippingTotal, detail.currency, locale)}
                             </span>
                           </p>
                           <p className="text-[#6B7280] flex justify-between">
-                            <span className="font-bold text-[#1A1A2E]">Giảm giá:</span>
+                            <span className="font-bold text-[#1A1A2E]">
+                              {t.profile.orders.discount}:
+                            </span>
                             <span className="font-semibold text-slate-600">
-                              {formatMoney(detail.discountTotal, detail.currency)}
+                              {formatMoney(detail.discountTotal, detail.currency, locale)}
                             </span>
                           </p>
                           <p className="text-[#17409A] flex justify-between font-black text-sm border-t border-slate-200/60 pt-1 mt-1 col-span-2">
-                            <span>Thành tiền:</span>
+                            <span>{t.profile.orders.totalCost}:</span>
                             <span>
-                              {formatMoney(detail.grandTotal, detail.currency)}
+                              {formatMoney(detail.grandTotal, detail.currency, locale)}
                             </span>
                           </p>
                         </div>
@@ -433,11 +441,11 @@ export default function OrdersTab() {
                       {/* Item Details */}
                       <div>
                         <p className="text-sm font-black text-[#17409A] uppercase tracking-wider mb-3">
-                          Danh sách sản phẩm
+                          {locale === "vi" ? "Danh sách sản phẩm" : "Product List"}
                         </p>
                         {detail.orderItems.length === 0 ? (
                           <p className="text-xs text-[#9CA3AF]">
-                            Đơn hàng hiện chưa có item snapshot.
+                            {t.profile.orders.orderItemEmpty}
                           </p>
                         ) : (
                           <div className="space-y-3">
@@ -461,7 +469,7 @@ export default function OrdersTab() {
                                       item.buildDetails?.baseProductName ||
                                       item.productName ||
                                       item.productNameSnapshot ||
-                                      "Sản phẩm"
+                                      (locale === "vi" ? "Sản phẩm" : "Product")
                                     }
                                     className="h-16 w-16 md:h-20 md:w-20 rounded-2xl object-cover border border-slate-100 shrink-0 shadow-sm"
                                   />
@@ -475,24 +483,25 @@ export default function OrdersTab() {
                                       item.productionJobs?.[0]?.productName ||
                                       item.productNameSnapshot ||
                                       item.productName ||
-                                      "Sản phẩm không có tên"}
+                                      t.profile.orders.productNoName}
                                   </p>
                                   <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 font-bold">
-                                    <span>SL: <span className="text-[#1A1A2E]">{item.quantity}</span></span>
+                                    <span>{locale === "vi" ? "SL: " : "Qty: "}<span className="text-[#1A1A2E]">{item.quantity}</span></span>
                                     <span>
-                                      Đơn giá:{" "}
+                                      {t.profile.orders.unitPrice}:{" "}
                                       <span className="text-[#1A1A2E]">
-                                        {formatMoney(item.unitPrice, detail.currency)}
+                                        {formatMoney(item.unitPrice, detail.currency, locale)}
                                       </span>
                                     </span>
                                     <span>
-                                      Thành tiền:{" "}
+                                      {t.profile.orders.itemTotal}:{" "}
                                       <span className="text-[#17409A]">
                                         {formatMoney(
                                           item.lineTotal ??
                                             item.totalPrice ??
                                             item.unitPrice * item.quantity,
                                           detail.currency,
+                                          locale,
                                         )}
                                       </span>
                                     </span>
@@ -500,7 +509,7 @@ export default function OrdersTab() {
 
                                   {item.buildDetails?.personalizationNote && (
                                     <p className="mt-2 text-xs text-[#FF8C42] font-bold italic leading-relaxed">
-                                      Ghi chú cá nhân hóa:{" "}
+                                      {t.profile.orders.personalizationNote}:{" "}
                                       {item.buildDetails.personalizationNote}
                                     </p>
                                   )}
@@ -517,7 +526,7 @@ export default function OrdersTab() {
                                             >
                                               {comp.productName ||
                                                 comp.variantName ||
-                                                "Phụ kiện"}
+                                                t.profile.orders.accessory}
                                             </span>
                                           ),
                                         )}
@@ -528,7 +537,7 @@ export default function OrdersTab() {
                                     (reportedItemMap[item.orderItemId] ? (
                                       <div className="mt-3 flex items-center gap-2 text-xs font-black">
                                         <span className="text-[#9CA3AF]">
-                                          Bảo hành:
+                                          {locale === "vi" ? "Bảo hành:" : "Warranty:"}
                                         </span>
                                         {(() => {
                                           const status =
@@ -536,23 +545,23 @@ export default function OrdersTab() {
                                               .status;
                                           let style =
                                             "bg-[#FF8C42]/20 text-[#FF8C42]";
-                                          let label = "Chờ tiếp nhận";
+                                          let label = t.profile.issues.statuses.PENDING;
 
                                           if (status === "CLOSED") {
                                             style =
                                               "bg-[#4ECDC4]/20 text-[#4ECDC4]";
-                                            label = "Đã đóng";
+                                            label = t.profile.issues.statuses.CLOSED;
                                           } else if (status === "RESOLVED") {
                                             style =
                                               "bg-[#1D4ED8]/20 text-[#1D4ED8]";
-                                            label = "Đã có hướng xử lý";
+                                            label = t.profile.issues.statuses.RESOLVED;
                                           } else if (status === "REJECTED") {
                                             style = "bg-red-100 text-red-600";
-                                            label = "Từ chối";
+                                            label = t.profile.issues.statuses.REJECTED;
                                           } else if (status === "PROCESSING") {
                                             style =
                                               "bg-[#7C5CFC]/20 text-[#7C5CFC]";
-                                            label = "Đang xử lý";
+                                            label = t.profile.issues.statuses.PROCESSING;
                                           }
 
                                           return (
@@ -572,13 +581,13 @@ export default function OrdersTab() {
                                           setSelectedItemName(
                                             item.productName ||
                                               item.productNameSnapshot ||
-                                              "Sản phẩm",
+                                              (locale === "vi" ? "Sản phẩm" : "Product"),
                                           );
                                           setIssueModalOpen(true);
                                         }}
                                         className="mt-3 text-[#FF8C42] text-[11px] font-black underline hover:text-[#e07530] transition-colors"
                                       >
-                                        Yêu cầu bảo hành / Báo lỗi
+                                        {t.profile.orders.warrantyBtn}
                                       </button>
                                     ))}
                                 </div>
@@ -592,14 +601,14 @@ export default function OrdersTab() {
                       {fulfillmentMap[order.orderId] && (
                         <div className="mt-4 pt-4 border-t border-slate-100">
                           <p className="text-sm font-black text-[#17409A] uppercase tracking-wider mb-3">
-                            Thông tin giao hàng
+                            {t.profile.orders.deliveryInfo}
                           </p>
                           <div className="bg-[#F8F9FF] rounded-3xl p-5 border border-slate-100">
                             <p className="text-[#1A1A2E] text-sm font-black mb-1">
-                              Mã vận đơn: {fulfillmentMap[order.orderId]?.trackingNumber}
+                              {t.profile.orders.trackingNumber}: {fulfillmentMap[order.orderId]?.trackingNumber}
                             </p>
                             <p className="text-[#6B7280] text-xs font-bold mb-4">
-                              Đơn vị vận chuyển: {fulfillmentMap[order.orderId]?.carrier || "GHTK"}
+                              {t.profile.orders.carrier}: {fulfillmentMap[order.orderId]?.carrier || "GHTK"}
                             </p>
 
                             {!trackingDataMap[order.orderId] ? (
@@ -616,19 +625,19 @@ export default function OrdersTab() {
                                 ) : (
                                   <MdLocalShipping className="text-base" />
                                 )}
-                                Theo dõi đơn hàng
+                                {t.profile.orders.trackBtn}
                               </button>
                             ) : (
                               <div className="mt-3 p-3 bg-white rounded-2xl border border-slate-100">
                                 <p className="text-[#1A1A2E] font-black text-xs mb-1">
-                                  Trạng thái: <span className="text-[#17409A]">{trackingDataMap[order.orderId].order?.status_text || trackingDataMap[order.orderId].message}</span>
+                                  {t.profile.orders.trackingStatus}: <span className="text-[#17409A]">{trackingDataMap[order.orderId].order?.status_text || trackingDataMap[order.orderId].message}</span>
                                 </p>
                                 <p className="text-[#6B7280] text-[11px] font-bold">
-                                  Cập nhật lúc: {trackingDataMap[order.orderId].order?.action_time || "N/A"}
+                                  {t.profile.orders.updatedAt}: {trackingDataMap[order.orderId].order?.action_time || "N/A"}
                                 </p>
                                 {trackingDataMap[order.orderId].order?.reason && (
                                   <p className="text-[#FF8C42] text-[11px] font-bold italic mt-1.5">
-                                    Ghi chú: {trackingDataMap[order.orderId].order.reason}
+                                    {t.profile.orders.trackingNote}: {trackingDataMap[order.orderId].order.reason}
                                   </p>
                                 )}
                               </div>
@@ -651,10 +660,10 @@ export default function OrdersTab() {
                             {confirmingId === order.orderId ? (
                               <MdAutorenew className="animate-spin inline mr-2 text-lg" />
                             ) : null}
-                            Đã nhận được hàng
+                            {t.profile.orders.confirmReceivedBtn}
                           </button>
                           <p className="text-center text-[11px] text-[#9CA3AF] font-bold mt-2.5 tracking-wide">
-                            * Vui lòng chỉ xác nhận sau khi đã kiểm tra kỹ sản phẩm
+                            {t.profile.orders.confirmReceivedNotice}
                           </p>
                         </div>
                       )}
@@ -670,7 +679,10 @@ export default function OrdersTab() {
       {orders.length > PAGE_SIZE && (
         <div className="mt-4 flex items-center justify-between rounded-3xl bg-[#F8F9FF] p-5 border border-slate-100">
           <p className="text-xs md:text-sm font-bold text-[#6B7280]">
-            Trang {currentPage}/{totalPages} • Tổng {orders.length} đơn
+            {t.profile.orders.pagination
+              .replace("{page}", String(currentPage))
+              .replace("{total}", String(totalPages))
+              .replace("{count}", String(orders.length))}
           </p>
           <div className="flex items-center gap-3">
             <button
@@ -678,14 +690,14 @@ export default function OrdersTab() {
               disabled={currentPage === 1}
               className="px-5 py-2.5 rounded-2xl text-xs font-black border border-[#D7DEEF] text-[#17409A] disabled:opacity-40 disabled:cursor-not-allowed bg-white hover:bg-slate-50 transition-all shadow-sm"
             >
-              Trước
+              {t.profile.orders.prevBtn}
             </button>
             <button
               onClick={goNextPage}
               disabled={currentPage === totalPages}
               className="px-5 py-2.5 rounded-2xl text-xs font-black bg-[#17409A] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#12317A] transition-all shadow-md"
             >
-              Sau
+              {t.profile.orders.nextBtn}
             </button>
           </div>
         </div>

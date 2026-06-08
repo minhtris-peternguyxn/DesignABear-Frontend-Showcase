@@ -1,12 +1,19 @@
 "use client";
 
 import { IoCheckmark } from "react-icons/io5";
-import { STEPS } from "./checkout.config";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function StepTracker({ current }: { current: number }) {
+  const { locale, t } = useLanguage();
+  const steps = [
+    { id: 1, label: t.checkout.steps.delivery, sub: locale === "vi" ? "Địa chỉ nhận" : "Address" },
+    { id: 2, label: t.checkout.steps.payment, sub: locale === "vi" ? "Phương thức" : "Payment" },
+    { id: 3, label: t.checkout.steps.confirm, sub: locale === "vi" ? "Xác nhận" : "Confirm" },
+  ];
+
   return (
     <div className="flex items-center gap-0 mb-10">
-      {STEPS.map((s, i) => {
+      {steps.map((s, i) => {
         const done = current > s.id;
         const active = current === s.id;
         return (
@@ -61,7 +68,7 @@ export function StepTracker({ current }: { current: number }) {
                 </p>
               </div>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className="flex items-center gap-1 px-2 mb-6">
                 {[0, 1, 2].map((dot) => (
                   <div

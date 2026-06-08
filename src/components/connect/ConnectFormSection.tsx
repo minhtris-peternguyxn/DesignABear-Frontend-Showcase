@@ -8,21 +8,23 @@ import {
   IoChevronForward,
 } from "react-icons/io5";
 import CustomDropdown from "@/components/shared/CustomDropdown";
-
-const TOPIC_OPTIONS = [
-  { label: "Tư vấn sản phẩm", value: "Tư vấn sản phẩm" },
-  { label: "Hỗ trợ kỹ thuật", value: "Hỗ trợ kỹ thuật" },
-  { label: "Lộ trình học tập cho bé", value: "Lộ trình học tập cho bé" },
-  { label: "Góp ý tính năng mới", value: "Góp ý tính năng mới" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ConnectFormSection() {
+  const { locale, t } = useLanguage();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [topic, setTopic] = useState("Tư vấn sản phẩm");
   const [message, setMessage] = useState("");
+
+  const TOPIC_OPTIONS = useMemo(() => [
+    { label: t.connect.form.topics.product, value: "Tư vấn sản phẩm" },
+    { label: locale === "vi" ? "Hỗ trợ kỹ thuật" : "Technical support", value: "Hỗ trợ kỹ thuật" },
+    { label: t.connect.form.topics.learning, value: "Lộ trình học tập cho bé" },
+    { label: t.connect.form.topics.feature, value: "Góp ý tính năng mới" },
+  ], [locale, t]);
 
   const canNextStep1 = useMemo(
     () => name.trim() && phone.trim(),
@@ -44,33 +46,32 @@ export default function ConnectFormSection() {
           <div className="grid lg:grid-cols-[1fr_1fr] gap-6 md:gap-8 items-stretch">
             <div className="connect-ac rounded-3xl bg-[#17409A] text-white p-7 md:p-9 shadow-xl">
               <p className="connect-chapter-title text-sm font-bold tracking-wider uppercase text-white/70">
-                Mở kết nối ngay
+                {locale === "vi" ? "Mở kết nối ngay" : "Connect Now"}
               </p>
               <h2 className="connect-reveal mt-3 text-3xl md:text-4xl font-black leading-tight">
-                Gửi lời nhắn cho đội ngũ Design a Bear
+                {t.connect.form.sendMsgTitle}
               </h2>
               <p className="mt-4 text-white/85 text-base leading-relaxed">
-                Mô tả ngắn vấn đề hoặc mong muốn của bạn. Chúng tôi sẽ phản hồi
-                bằng phương án rõ ràng trong vòng 24 giờ làm việc.
+                {t.connect.form.sendMsgDesc}
               </p>
 
               <div className="mt-6 space-y-3">
                 <div className="flex items-start gap-2">
                   <IoCheckmarkCircle className="text-xl mt-0.5" />
                   <p className="text-sm text-white/85">
-                    Tư vấn đúng nhu cầu theo độ tuổi của bé
+                    {locale === "vi" ? "Tư vấn đúng nhu cầu theo độ tuổi của bé" : "Advice tailored to baby's age"}
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <IoCheckmarkCircle className="text-xl mt-0.5" />
                   <p className="text-sm text-white/85">
-                    Hướng dẫn setup và sử dụng sản phẩm tối ưu
+                    {locale === "vi" ? "Hướng dẫn setup và sử dụng sản phẩm tối ưu" : "Setup and optimization guides"}
                   </p>
                 </div>
                 <div className="flex items-start gap-2">
                   <IoCheckmarkCircle className="text-xl mt-0.5" />
                   <p className="text-sm text-white/85">
-                    Tiếp nhận góp ý để cải tiến tính năng mới
+                    {locale === "vi" ? "Tiếp nhận góp ý để cải tiến tính năng mới" : "Feedbacks for future features"}
                   </p>
                 </div>
               </div>
@@ -80,14 +81,14 @@ export default function ConnectFormSection() {
               <div className="mb-5">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold text-[#1A1A2E]">
-                    Bước {step}/3
+                    {locale === "vi" ? "Bước" : "Step"} {step}/3
                   </p>
                   <p className="text-xs font-semibold text-[#9CA3AF]">
                     {step === 1
-                      ? "Thông tin cơ bản"
+                      ? (locale === "vi" ? "Thông tin cơ bản" : "Basic Info")
                       : step === 2
-                        ? "Mục tiêu hỗ trợ"
-                        : "Lời nhắn chi tiết"}
+                        ? (locale === "vi" ? "Mục tiêu hỗ trợ" : "Support Goal")
+                        : (locale === "vi" ? "Lời nhắn chi tiết" : "Detailed Message")}
                   </p>
                 </div>
                 <div className="mt-2 h-2 rounded-full bg-[#E5E7EB] overflow-hidden">
@@ -103,24 +104,24 @@ export default function ConnectFormSection() {
                   <div className="grid sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-bold text-[#1A1A2E]">
-                        Họ và tên
+                        {locale === "vi" ? "Họ và tên" : "Full Name"}
                       </label>
                       <input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="mt-1.5 w-full rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none focus:border-[#17409A]"
-                        placeholder="Nguyễn Thị A"
+                        placeholder={locale === "vi" ? "Nguyễn Thị A" : "Jane Doe"}
                       />
                     </div>
                     <div>
                       <label className="text-sm font-bold text-[#1A1A2E]">
-                        Số điện thoại
+                        {t.connect.form.phoneLabel}
                       </label>
                       <input
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="mt-1.5 w-full rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none focus:border-[#17409A]"
-                        placeholder="090x xxx xxx"
+                        placeholder={locale === "vi" ? "090x xxx xxx" : "Enter phone number..."}
                       />
                     </div>
                   </div>
@@ -131,18 +132,18 @@ export default function ConnectFormSection() {
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm font-bold text-[#1A1A2E]">
-                      Email
+                      {t.connect.form.emailLabel}
                     </label>
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="mt-1.5 w-full rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none focus:border-[#17409A]"
-                      placeholder="email@domain.com"
+                      placeholder={t.connect.form.emailPlaceholder}
                     />
                   </div>
                   <div>
                     <label className="text-sm font-bold text-[#1A1A2E]">
-                      Bạn cần hỗ trợ về
+                      {t.connect.form.topicLabel}
                     </label>
                     <div className="mt-1.5">
                       <CustomDropdown
@@ -158,17 +159,17 @@ export default function ConnectFormSection() {
               {step === 3 && (
                 <div>
                   <label className="text-sm font-bold text-[#1A1A2E]">
-                    Nội dung cần hỗ trợ
+                    {locale === "vi" ? "Nội dung cần hỗ trợ" : "Message details"}
                   </label>
                   <textarea
                     rows={5}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="mt-1.5 w-full rounded-2xl border border-[#E5E7EB] bg-white px-4 py-3 text-sm outline-none focus:border-[#17409A] resize-none"
-                    placeholder="Bạn đang cần kết nối về vấn đề gì?"
+                    placeholder={t.connect.form.msgPlaceholder}
                   />
                   <p className="mt-1 text-xs text-[#9CA3AF]">
-                    Tối thiểu 10 ký tự để gửi yêu cầu.
+                    {locale === "vi" ? "Tối thiểu 10 ký tự để gửi yêu cầu." : "At least 10 characters required."}
                   </p>
                 </div>
               )}
@@ -181,7 +182,7 @@ export default function ConnectFormSection() {
                   className="inline-flex items-center justify-center gap-1 min-h-11 px-4 py-2 rounded-2xl border border-[#D1D5DB] text-[#6B7280] font-bold hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <IoChevronBack />
-                  Quay lại
+                  {locale === "vi" ? "Quay lại" : "Back"}
                 </button>
 
                 {step < 3 ? (
@@ -194,7 +195,7 @@ export default function ConnectFormSection() {
                     onClick={() => setStep((s) => Math.min(3, s + 1))}
                     className="inline-flex items-center justify-center gap-1 min-h-11 px-5 py-2 rounded-2xl bg-[#17409A] text-white font-extrabold hover:bg-[#0E2A66] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    Tiếp theo
+                    {locale === "vi" ? "Tiếp theo" : "Next"}
                     <IoChevronForward />
                   </button>
                 ) : (
@@ -204,7 +205,7 @@ export default function ConnectFormSection() {
                     className="inline-flex items-center justify-center gap-2 min-h-11 px-6 py-3 rounded-2xl bg-[#17409A] text-white font-extrabold hover:bg-[#0E2A66] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     <IoSend />
-                    Gửi yêu cầu
+                    {locale === "vi" ? "Gửi yêu cầu" : "Submit"}
                   </button>
                 )}
               </div>

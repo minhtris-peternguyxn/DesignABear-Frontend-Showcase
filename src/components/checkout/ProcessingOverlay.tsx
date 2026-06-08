@@ -3,17 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
-
-const MESSAGES = [
-  "Đang chuẩn bị gấu thợ...",
-  "Kiểm tra lại linh kiện...",
-  "Đang khâu trái tim hồng...",
-  "Liên kết với cổng thanh toán PayOS...",
-  "Đang bảo mật giao dịch...",
-  "Gấu của bạn sắp lên đường rồi!",
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function ProcessingOverlay() {
+  const { t } = useLanguage();
+  const messages = t.checkout.processing;
   const [messageIndex, setMessageIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLParagraphElement>(null);
@@ -41,7 +35,7 @@ export function ProcessingOverlay() {
         opacity: 0,
         duration: 0.3,
         onComplete: () => {
-          setMessageIndex((prev) => (prev + 1) % MESSAGES.length);
+          setMessageIndex((prev) => (prev + 1) % messages.length);
           gsap.fromTo(
             textRef.current,
             { y: 10, opacity: 0 },
@@ -52,7 +46,7 @@ export function ProcessingOverlay() {
     }, 3500);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [messages.length]);
 
   return (
     <div
@@ -74,7 +68,7 @@ export function ProcessingOverlay() {
         <div className="relative w-full h-full transform hover:scale-105 transition-transform duration-500">
           <Image
             src="/images/bear-craftsman.png"
-            alt="Đang chuẩn bị gấu"
+            alt={t.checkout.processingTitle}
             fill
             className="object-contain"
             priority
@@ -87,7 +81,7 @@ export function ProcessingOverlay() {
           className="text-2xl font-black mb-2 tracking-tight"
           style={{ color: "#1A1A2E" }}
         >
-          Đang xử lý đơn hàng
+          {t.checkout.processingTitle}
         </h2>
         
         <div className="relative h-7 mb-6">
@@ -96,7 +90,7 @@ export function ProcessingOverlay() {
             className="text-sm font-bold absolute inset-0 text-center"
             style={{ color: "#17409A" }}
           >
-            {MESSAGES[messageIndex]}
+            {messages[messageIndex]}
           </p>
         </div>
 
@@ -117,7 +111,7 @@ export function ProcessingOverlay() {
         </div>
         
         <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-[#9CA3AF]">
-          Vui lòng không tắt trình duyệt
+          {t.checkout.processingWarning}
         </p>
       </div>
 

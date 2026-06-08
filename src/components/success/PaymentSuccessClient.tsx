@@ -31,13 +31,17 @@ type PendingPaymentData = {
   createdAt?: string;
 };
 
-function formatVnd(value: number) {
-  return `${value.toLocaleString("vi-VN")} đ`;
+import { useLanguage } from "@/contexts/LanguageContext";
+
+function formatPrice(price: number | null | undefined, locale: string, currencySymbol: string): string {
+  const formatted = (price ?? 0).toLocaleString(locale === "vi" ? "vi-VN" : "en-US");
+  return locale === "vi" ? `${formatted} ${currencySymbol}` : `${currencySymbol}${formatted}`;
 }
 
 export default function PaymentSuccessClient() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
+  const { locale, t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
@@ -134,15 +138,17 @@ export default function PaymentSuccessClient() {
   }, [status, cancel, orderCodeFromQuery, clearCart]);
 
   const title = useMemo(() => {
-    if (loading) return "Đang xác nhận thanh toán";
-    if (isPaid) return "Thanh toán thành công";
-    return "Thanh toán chưa hoàn tất";
-  }, [loading, isPaid]);
+    if (loading) return t.success.verifyingTitle;
+    if (isPaid) return t.success.successTitle;
+    return t.success.failTitle;
+  }, [loading, isPaid, t]);
 
   const paymentStatusLabel = useMemo(() => {
-    if (loading) return "ĐANG XÁC NHẬN";
-    return isPaid ? "ĐÃ THANH TOÁN" : "CHƯA THANH TOÁN";
-  }, [loading, isPaid]);
+    if (loading) return locale === "vi" ? "ĐANG XÁC NHẬN" : "VERIFYING";
+    return isPaid
+      ? (locale === "vi" ? "ĐÃ THANH TOÁN" : "PAID")
+      : (locale === "vi" ? "CHƯA THANH TOÁN" : "UNPAID");
+  }, [loading, isPaid, locale]);
 
   return (
     <div className="max-w-5xl mx-auto px-5 sm:px-8 lg:px-12">
@@ -204,10 +210,10 @@ export default function PaymentSuccessClient() {
               style={{ color: "#6B7280" }}
             >
               {loading
-                ? "Hệ thống đang kiểm tra giao dịch từ cổng thanh toán..."
+                ? t.success.checkingTx
                 : isPaid
-                  ? "Cảm ơn bạn đã mua hàng tại Design A Bear."
-                  : errorText || "Giao dịch chưa được xác nhận."}
+                  ? t.success.thankYou
+                  : errorText || t.success.unconfirmedTx}
             </p>
           </div>
         </div>
@@ -220,7 +226,7 @@ export default function PaymentSuccessClient() {
             <div className="flex items-center gap-2 mb-2">
               <IoReceiptOutline style={{ color: "#17409A" }} />
               <span className="text-sm font-bold" style={{ color: "#17409A" }}>
-                Mã đơn hàng
+                {t.success.orderCode}
               </span>
             </div>
             <p
@@ -228,7 +234,7 @@ export default function PaymentSuccessClient() {
               style={{ color: "#1A1A2E" }}
             >
               {formatShortOrderCode(orderNumber || orderCode) ||
-                "Đang cập nhật"}
+                t.success.updating}
             </p>
           </div>
 
@@ -239,11 +245,13 @@ export default function PaymentSuccessClient() {
             <div className="flex items-center gap-2 mb-2">
               <IoCashOutline style={{ color: "#17409A" }} />
               <span className="text-sm font-bold" style={{ color: "#17409A" }}>
-                Số tiền thanh toán
+                {t.success.amountPaid}
               </span>
             </div>
             <p className="text-lg font-black" style={{ color: "#1A1A2E" }}>
-              {amount > 0 ? formatVnd(amount) : "Đang cập nhật"}
+              {amount > 0
+                ? formatPrice(amount, locale, locale === "vi" ? "đ" : "VND")
+                : t.success.updating}
             </p>
           </div>
 
@@ -254,16 +262,16 @@ export default function PaymentSuccessClient() {
             <div className="flex items-center gap-2 mb-2">
               <IoTimeOutline style={{ color: "#17409A" }} />
               <span className="text-sm font-bold" style={{ color: "#17409A" }}>
-                Tiến trình đơn hàng
+                {t.success.orderProgress}
               </span>
             </div>
             <p className="text-lg font-black" style={{ color: "#1A1A2E" }}>
-              {isPaid ? "Đã ghi nhận" : "Đang chờ xử lý"}
+              {isPaid ? t.success.recorded : t.success.pending}
             </p>
             <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
               {isPaid
-                ? "Đơn sẽ được chuẩn bị và giao trong 2-5 ngày làm việc."
-                : "Bạn có thể thanh toán lại để hoàn tất đơn hàng."}
+                ? t.success.deliveryNotice
+                : t.success.repayNotice}
             </p>
           </div>
         </div>
@@ -284,12 +292,12 @@ export default function PaymentSuccessClient() {
               className="text-sm font-black"
               style={{ color: isPaid ? "#0F766E" : "#BE123C" }}
             >
-              {isPaid ? "Thanh toán đã an toàn" : "Cần xác nhận lại giao dịch"}
+              {isPaid ? t.success.safePayment : t.success.reconfirmNotice}
             </p>
             <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
               {isPaid
-                ? "Hệ thống đã nhận thanh toán. Bạn có thể theo dõi trạng thái tại trang hồ sơ đơn hàng."
-                : "Nếu tài khoản đã bị trừ tiền nhưng trạng thái chưa cập nhật, vui lòng liên hệ hỗ trợ để kiểm tra."}
+                ? t.success.paidNotice
+                : t.success.unpaidNotice}
             </p>
           </div>
         </div>
@@ -301,7 +309,7 @@ export default function PaymentSuccessClient() {
             style={{ backgroundColor: "#17409A", color: "#FFFFFF" }}
           >
             <IoBagHandleOutline />
-            Tiếp tục mua sắm
+            {t.success.continueShopping}
           </Link>
           <Link
             href="/"
@@ -313,7 +321,7 @@ export default function PaymentSuccessClient() {
             }}
           >
             <IoHomeOutline />
-            Về trang chủ
+            {t.success.goHome}
           </Link>
         </div>
       </div>

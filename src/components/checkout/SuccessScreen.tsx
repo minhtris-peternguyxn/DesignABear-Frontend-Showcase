@@ -5,9 +5,11 @@ import Link from "next/link";
 import gsap from "gsap";
 import { IoCheckmarkCircle, IoArrowBack, IoHomeOutline } from "react-icons/io5";
 import { formatShortOrderCode } from "@/utils/order";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function SuccessScreen({ orderId }: { orderId: string }) {
   const confRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!confRef.current) return;
@@ -101,25 +103,20 @@ export function SuccessScreen({ orderId }: { orderId: string }) {
         style={{ backgroundColor: "rgba(78,205,196,0.1)", color: "#4ECDC4" }}
       >
         <IoCheckmarkCircle />
-        Đặt hàng thành công!
+        {t.checkout.success.title}
       </div>
 
       <h2
         className="text-2xl font-black mb-2"
-        style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
+        style={{ color: "#1A1A2E", fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
       >
-        Cảm ơn bạn đã tin tưởng!
+        {t.checkout.success.subtitle}
       </h2>
       <p className="text-sm leading-relaxed mb-2" style={{ color: "#6B7280" }}>
-        Đơn hàng{" "}
-        <span className="font-bold" style={{ color: "#17409A" }}>
-          {formatShortOrderCode(orderId)}
-        </span>{" "}
-        đã được xác nhận.
+        {t.checkout.success.orderCode.replace("{code}", formatShortOrderCode(orderId)) + " " + t.checkout.success.confirmed}
       </p>
       <p className="text-sm leading-relaxed mb-8" style={{ color: "#6B7280" }}>
-        Chú gấu của bạn đang được chuẩn bị và sẽ tới tay bé trong 2–5 ngày làm
-        việc.
+        {t.checkout.success.notice}
       </p>
 
       <div className="flex gap-3">
@@ -133,7 +130,7 @@ export function SuccessScreen({ orderId }: { orderId: string }) {
           }}
         >
           <IoArrowBack className="text-base" />
-          Tiếp tục mua sắm
+          {t.checkout.success.continueShopping}
         </Link>
         <Link
           href="/"
@@ -143,7 +140,7 @@ export function SuccessScreen({ orderId }: { orderId: string }) {
           }}
         >
           <IoHomeOutline className="text-base" />
-          Về trang chủ
+          {t.checkout.success.goHome}
         </Link>
       </div>
     </div>

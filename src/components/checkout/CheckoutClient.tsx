@@ -24,6 +24,7 @@ import { ProcessingOverlay } from "./ProcessingOverlay";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { userService } from "@/services/user.service";
 import { addressService } from "@/services/address.service";
 import { orderService } from "@/services/order.service";
@@ -36,6 +37,7 @@ import { normalizePhoneNumber } from "@/utils/address";
 import { getComponentsForValidation } from "@/utils/stock_utils";
 /*  Main Component */
 export default function CheckoutClient() {
+  const { locale, t } = useLanguage();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<DeliveryForm>({
     name: "",
@@ -141,8 +143,8 @@ export default function CheckoutClient() {
           localStorage.removeItem(STORAGE_KEYS.PENDING_PAYMENT_ORDER);
           toast.error(
             cancel === "true"
-              ? "Bạn đã hủy thanh toán. Đơn hàng đã chuyển CANCELLED."
-              : `Thanh toán thất bại: ${status}`,
+              ? t.checkout.toasts.paymentCancelled
+              : t.checkout.toasts.paymentFailed.replace("{status}", status),
           );
           return;
         }
@@ -152,7 +154,7 @@ export default function CheckoutClient() {
 
         if (!confirmRes.isSuccess) {
           throw new Error(
-            confirmRes.error?.description || "Xác nhận thanh toán thất bại",
+            confirmRes.error?.description || t.checkout.toasts.paymentConfirmFailed,
           );
         }
 
@@ -170,21 +172,21 @@ export default function CheckoutClient() {
 
         setOrderPlaced(true);
         clearCart();
-        toast.success("Thanh toán thành công!");
+        toast.success(t.checkout.toasts.paymentSuccess);
       } catch (error: any) {
-        toast.error(error.message || "Không thể xác nhận thanh toán");
+        toast.error(error.message || t.checkout.toasts.paymentConfirmFailed);
       } finally {
         setSubmitting(false);
       }
     };
 
     handlePaymentReturn();
-  }, [searchParams, clearCart, toast]);
+  }, [searchParams, clearCart, toast, t.checkout.toasts.paymentCancelled, t.checkout.toasts.paymentFailed, t.checkout.toasts.paymentConfirmFailed, t.checkout.toasts.paymentSuccess]);
 
   const handleApplyCoupon = async () => {
     const input = couponInput.trim();
     if (!input) {
-      toast.error("Vui lòng nhập mã khuyến mãi");
+      toast.error(t.checkout.toasts.enterPromoCode);
       return;
     }
 
@@ -195,7 +197,7 @@ export default function CheckoutClient() {
       .filter((c) => c !== "");
 
     if (codes.length === 0) {
-      toast.error("Vui lòng nhập mã khuyến mãi hợp lệ");
+      toast.error(t.checkout.toasts.invalidPromoCode);
       return;
     }
 
@@ -209,7 +211,7 @@ export default function CheckoutClient() {
       for (const code of codes) {
         // Check for duplicate in already applied list
         if (appliedCoupons.some((c) => c.code === code)) {
-          toast.info(`Mã ${code} đã được áp dụng rồi.`);
+          toast.info(t.checkout.toasts.promoCodeApplied.replace("{code}", code));
           continue;
         }
 
@@ -233,14 +235,16 @@ export default function CheckoutClient() {
               },
             ]);
             successCount++;
-            toast.success(`Áp dụng mã ${code} thành công!`);
+            toast.success(t.checkout.toasts.promoAppliedSuccess.replace("{code}", code));
           } else {
             toast.error(
-              `Mã ${code}: ${res.error?.description || "Không hợp lệ"}`,
+              t.checkout.toasts.promoCodeInvalidDetail
+                .replace("{code}", code)
+                .replace("{detail}", res.error?.description || (locale === "vi" ? "Không hợp lệ" : "Invalid")),
             );
           }
         } catch (err) {
-          toast.error(`Mã ${code}: Lỗi kết nối`);
+          toast.error(t.checkout.toasts.promoCodeConnError.replace("{code}", code));
         }
       }
 
@@ -248,7 +252,7 @@ export default function CheckoutClient() {
         setCouponInput("");
       }
     } catch (error: any) {
-      toast.error(error.message || "Lỗi xử thực mã khuyến mãi");
+      toast.error(error.message || t.checkout.toasts.promoCodeAuthError);
     } finally {
       setSubmitting(false);
     }
@@ -261,7 +265,7 @@ export default function CheckoutClient() {
   // Fetch initial profile & address data
   useEffect(() => {
     if (!isAuthenticated) {
-      toast.info("Vui lòng đăng nhập để thanh toán.");
+      toast.info(t.checkout.toasts.loginRequired);
       router.push("/auth");
       return;
     }
@@ -380,7 +384,7 @@ export default function CheckoutClient() {
 
     if (!addrId) {
       if (!userId) {
-        throw new Error("Không xác định được người dùng để tạo địa chỉ.");
+        throw new Error(t.checkout.toasts.userNotFound);
       }
 
       const createAddrRes = await addressService.createAddress({
@@ -400,7 +404,7 @@ export default function CheckoutClient() {
       });
 
       if (!createAddrRes.isSuccess || !createAddrRes.value?.addressId) {
-        throw new Error("Không thể tạo địa chỉ giao hàng. Vui lòng thử lại.");
+        throw new Error(t.checkout.toasts.createAddressFailed);
       }
 
       addrId = createAddrRes.value.addressId;
@@ -454,7 +458,7 @@ export default function CheckoutClient() {
               await calculateFee(addrId);
             }
           } catch (e) {
-            toast.error("Đã có lỗi xảy ra : " + e);
+            toast.error(t.checkout.toasts.errorOccurred.replace("{error}", String(e)));
           }
         })();
       }
@@ -503,25 +507,23 @@ export default function CheckoutClient() {
         }
 
         if (minAvailable === Infinity || minAvailable <= 0) {
-          newErrors[item.cartItemId] = "Sản phẩm này hiện đã hết hàng.";
+          newErrors[item.cartItemId] = t.checkout.errors.outOfStock;
           hasError = true;
         } else if (item.quantity > minAvailable) {
-          newErrors[item.cartItemId] = `Chỉnh còn ${minAvailable} sản phẩm sẵn có.`;
+          newErrors[item.cartItemId] = t.checkout.errors.onlyAvailable.replace("{count}", String(minAvailable));
           hasError = true;
         }
       }
 
       if (hasError) {
         setStockErrors(newErrors);
-        toast.error(
-          "Có sản phẩm trong giỏ hàng không đủ tồn kho. Vui lòng kiểm tra lại.",
-        );
+        toast.error(t.checkout.errors.stockInsufficient);
         return false;
       }
       return true;
     } catch (error) {
       console.error("Deep stock validation error:", error);
-      toast.error("Không thể xác thực tồn kho. Vui lòng thử lại.");
+      toast.error(t.checkout.errors.stockValidationFailed);
       return false;
     } finally {
       setSubmitting(false);
@@ -557,7 +559,7 @@ export default function CheckoutClient() {
           await calculateFee(addrId);
           transition(step + 1, 1);
         } catch (error: any) {
-          toast.error(error.message || "Đã có lỗi xảy ra");
+          toast.error(error.message || t.checkout.toasts.genericError);
         } finally {
           setSubmitting(false);
         }
@@ -592,7 +594,7 @@ export default function CheckoutClient() {
           const addrId = await getOrResolveAddressId();
 
           const cartId = localStorage.getItem(STORAGE_KEYS.CART_ID);
-          if (!cartId) throw new Error("Chưa có giỏ hàng.");
+          if (!cartId) throw new Error(t.checkout.errors.noCart);
 
           // Release the old cart reservation so it doesn't double-reserve when creating the order
           for (const item of items) {
@@ -651,7 +653,7 @@ export default function CheckoutClient() {
 
             if (!createPaymentRes.isSuccess || !createPaymentRes.value) {
               throw new Error(
-                createPaymentRes.error?.description || "Lỗi tạo thanh toán",
+                createPaymentRes.error?.description || t.checkout.errors.paymentCreateError,
               );
             }
 
@@ -704,7 +706,7 @@ export default function CheckoutClient() {
             );
 
             if (!paymentCode) {
-              throw new Error("Thiếu paymentCode/orderCode từ create-payment");
+              throw new Error(t.checkout.errors.missingPaymentCode);
             }
 
             const confirmPaymentRes =
@@ -713,12 +715,12 @@ export default function CheckoutClient() {
             if (!confirmPaymentRes.isSuccess) {
               throw new Error(
                 confirmPaymentRes.error?.description ||
-                  "Lỗi xác nhận thanh toán",
+                  t.checkout.errors.paymentConfirmError,
               );
             }
 
             setOrderDetails(orderRes.value);
-            toast.success("Đặt hàng thành công!");
+            toast.success(t.checkout.toasts.orderSuccess);
 
             gsap.to(contentRef.current, {
               scale: 0.96,
@@ -740,10 +742,10 @@ export default function CheckoutClient() {
               },
             });
           } else {
-            throw new Error(orderRes.error?.description || "Lỗi tạo đơn hàng");
+            throw new Error(orderRes.error?.description || t.checkout.errors.orderCreateError);
           }
         } catch (error: any) {
-          toast.error(error.message || "Đã có lỗi xảy ra");
+          toast.error(error.message || t.checkout.toasts.genericError);
         } finally {
           isSubmittingRef.current = false;
           setSubmitting(false);
@@ -797,10 +799,10 @@ export default function CheckoutClient() {
         </div>
         <div className="text-center">
           <h2 className="text-xl font-black mb-1" style={{ color: "#1A1A2E" }}>
-            Giỏ hàng trống
+            {t.checkout.emptyCart}
           </h2>
           <p className="text-sm" style={{ color: "#9CA3AF" }}>
-            Hãy thêm sản phẩm trước khi thanh toán nhé!
+            {t.checkout.emptyCartDesc}
           </p>
         </div>
         <Link
@@ -809,7 +811,7 @@ export default function CheckoutClient() {
           style={{ backgroundColor: "#17409A" }}
         >
           <IoArrowBack />
-          Quay lại mua sắm
+          {t.checkout.backToShopping}
         </Link>
       </div>
     );
@@ -865,7 +867,7 @@ export default function CheckoutClient() {
             style={{ color: "#9CA3AF" }}
           >
             <IoLockClosedOutline />
-            <span>Thanh toán an toàn & bảo mật</span>
+            <span>{t.checkout.securePayment}</span>
           </div>
         </header>
 
@@ -882,7 +884,7 @@ export default function CheckoutClient() {
                     fontFamily: "'Nunito', sans-serif",
                   }}
                 >
-                  Hoàn tất đơn hàng
+                  {t.checkout.completeOrder}
                 </h1>
                 <div className="flex items-center gap-2">
                   <div
@@ -967,7 +969,7 @@ export default function CheckoutClient() {
                   }}
                 >
                   <IoArrowBack className="text-base" />
-                  {step === 1 ? "Giỏ hàng" : "Quay lại"}
+                  {step === 1 ? t.checkout.navigation.cart : t.checkout.navigation.back}
                 </button>
 
                 {/* Next / Submit */}
@@ -987,12 +989,12 @@ export default function CheckoutClient() {
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mx-8" />
                   ) : step < 3 ? (
                     <>
-                      Tiếp theo
+                      {t.checkout.navigation.next}
                       <IoArrowForward className="text-base" />
                     </>
                   ) : (
                     <>
-                      Đặt hàng ngay
+                      {t.checkout.navigation.placeOrder}
                       <IoCheckmarkCircle className="text-base" />
                     </>
                   )}
@@ -1034,7 +1036,7 @@ export default function CheckoutClient() {
         >
           <div>
             <p className="text-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-              Tổng cộng
+              {t.checkout.summary.totalPaymentMobile}
             </p>
             <p className="text-lg font-black" style={{ color: "white" }}>
               {fmt(FINAL_TOTAL)}
@@ -1052,11 +1054,11 @@ export default function CheckoutClient() {
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
             ) : step < 3 ? (
               <>
-                Tiếp theo
+                {t.checkout.navigation.next}
                 <IoArrowForward className="text-sm" />
               </>
             ) : (
-              "Đặt hàng"
+              t.checkout.navigation.placeOrderShort
             )}
           </button>
         </div>

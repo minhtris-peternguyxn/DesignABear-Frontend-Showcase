@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -178,39 +179,47 @@ interface SpecCard {
   sub: string;
 }
 
-const SPEC_CARDS: SpecCard[] = [
-  {
-    icon: <IconFabric />,
-    title: "Chất liệu",
-    value: "Cotton hữu cơ",
-    sub: "Vải cao cấp 100% cotton tự nhiên, an toàn cho da bé nhạy cảm",
-  },
-  {
-    icon: <IconRuler />,
-    title: "Kích thước",
-    value: "Vừa mọi gấu",
-    sub: "Thiết kế co giãn linh hoạt, phù hợp tất cả gấu Design A Bear cỡ tiêu chuẩn",
-  },
-  {
-    icon: <IconWash />,
-    title: "Giặt giũ",
-    value: "Giặt tay nhẹ",
-    sub: "Giặt tay với nước lạnh hoặc máy giặt ở chế độ nhẹ, không sấy khô",
-  },
-  {
-    icon: <IconBear />,
-    title: "Tương thích",
-    value: "Tất cả gấu",
-    sub: "Phù hợp với toàn bộ dòng sản phẩm gấu bông đang bán tại Design A Bear",
-  },
-];
+interface SpecCard {
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+  sub: string;
+}
 
 interface Props {
   accentColor: string;
 }
 
 export default function AccessorySpecs({ accentColor }: Props) {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
+
+  const specCards: SpecCard[] = [
+    {
+      icon: <IconFabric />,
+      title: t.productDetail.accessorySpecs.fabricTitle,
+      value: t.productDetail.accessorySpecs.fabricValue,
+      sub: t.productDetail.accessorySpecs.fabricDesc,
+    },
+    {
+      icon: <IconRuler />,
+      title: t.productDetail.accessorySpecs.rulerTitle,
+      value: t.productDetail.accessorySpecs.rulerValue,
+      sub: t.productDetail.accessorySpecs.rulerDesc,
+    },
+    {
+      icon: <IconWash />,
+      title: t.productDetail.accessorySpecs.washTitle,
+      value: t.productDetail.accessorySpecs.washValue,
+      sub: t.productDetail.accessorySpecs.washDesc,
+    },
+    {
+      icon: <IconBear />,
+      title: t.productDetail.accessorySpecs.bearTitle,
+      value: t.productDetail.accessorySpecs.bearValue,
+      sub: t.productDetail.accessorySpecs.bearDesc,
+    },
+  ];
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -235,6 +244,8 @@ export default function AccessorySpecs({ accentColor }: Props) {
     return () => ctx.revert();
   }, []);
 
+  const headingParts = t.productDetail.accessorySpecs.heading.split("\n");
+
   return (
     <section
       ref={sectionRef}
@@ -249,26 +260,29 @@ export default function AccessorySpecs({ accentColor }: Props) {
               className="text-xs font-black tracking-[0.35em] uppercase mb-3"
               style={{ color: accentColor }}
             >
-              Thông tin sản phẩm
+              {t.productDetail.accessorySpecs.title}
             </p>
             <h2
               className="text-4xl md:text-5xl font-black text-white leading-tight"
               style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Chất lượng trong
-              <br />
-              từng đường may
+              {headingParts[0]}
+              {headingParts[1] && (
+                <>
+                  <br />
+                  {headingParts[1]}
+                </>
+              )}
             </h2>
           </div>
           <p className="text-white/50 text-sm max-w-xs leading-relaxed">
-            Mỗi phụ kiện được làm thủ công từ vật liệu tự nhiên cao cấp, kiểm
-            định an toàn trước khi đến tay bé.
+            {t.productDetail.accessorySpecs.description}
           </p>
         </div>
 
         {/* Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {SPEC_CARDS.map(({ icon, title, value, sub }, idx) => (
+          {specCards.map(({ icon, title, value, sub }, idx) => (
             <div
               key={title}
               className="acc-spec-card group relative p-7 rounded-3xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 overflow-hidden"
@@ -305,10 +319,10 @@ export default function AccessorySpecs({ accentColor }: Props) {
         {/* Care tag strip */}
         <div className="mt-12 flex flex-wrap items-center gap-3">
           {[
-            "An toàn cho trẻ em",
-            "Không chất độc hại",
-            "Thêu tay thủ công",
-            "Bền màu lâu dài",
+            t.productDetail.accessorySpecs.tags.safe,
+            t.productDetail.accessorySpecs.tags.chemicalFree,
+            t.productDetail.accessorySpecs.tags.handmade,
+            t.productDetail.accessorySpecs.tags.durable,
           ].map((tag) => (
             <span
               key={tag}

@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { IoSearchOutline, IoHeartOutline, IoHeart } from "react-icons/io5";
 import gsap from "gsap";
 import CustomDropdown from "@/components/shared/CustomDropdown";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const CATEGORIES = [
   { id: "all", label: "Tất cả" },
@@ -39,7 +40,15 @@ export default function ProductsFilter({
   showFavoritesOnly,
   onShowFavoritesChange,
 }: ProductsFilterProps) {
+  const { t } = useLanguage();
   const barRef = useRef<HTMLDivElement>(null);
+
+  const sortOptions = [
+    { id: "newest", label: t.products.filter.sort.newest },
+    { id: "popular", label: t.products.filter.sort.popular },
+    { id: "price-asc", label: t.products.filter.sort.priceAsc },
+    { id: "price-desc", label: t.products.filter.sort.priceDesc },
+  ];
 
   useEffect(() => {
     if (barRef.current) {
@@ -66,13 +75,13 @@ export default function ProductsFilter({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Tìm kiếm sản phẩm..."
+                placeholder={t.products.filter.placeholder}
                 className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border border-[#E5E7EB] text-sm text-[#1A1A2E] placeholder-[#9CA3AF] focus:outline-none focus:border-[#17409A] focus:ring-4 focus:ring-[#17409A]/5 transition-all shadow-sm"
               />
             </div>
             {/* Product count (Desktop) */}
             <span className="text-[#6B7280] text-xs font-bold whitespace-nowrap hidden lg:block bg-white px-3 py-1.5 rounded-lg border border-[#E5E7EB]">
-              {productCount} sản phẩm
+              {productCount} {t.products.filter.productCount}
             </span>
           </div>
 
@@ -83,7 +92,7 @@ export default function ProductsFilter({
             {/* Sort dropdown */}
             <div className="hidden md:block min-w-48">
               <CustomDropdown
-                options={SORT_OPTIONS.map((opt) => ({
+                options={sortOptions.map((opt) => ({
                   label: opt.label,
                   value: opt.id,
                 }))}
@@ -103,8 +112,8 @@ export default function ProductsFilter({
                   ? "bg-[#FF6B9D] border-[#FF6B9D] text-white shadow-md hover:scale-105"
                   : "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#FF6B9D] hover:text-[#FF6B9D] hover:scale-105"
               }`}
-              aria-label="Chỉ xem yêu thích"
-              title="Chỉ xem yêu thích"
+              aria-label={t.products.filter.favoritesOnly}
+              title={t.products.filter.favoritesOnly}
             >
               {showFavoritesOnly ? (
                 <IoHeart className="w-5 h-5" />

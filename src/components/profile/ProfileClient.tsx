@@ -22,6 +22,7 @@ import ProfileStats from "./ProfileStats";
 import ProfileInfoCard, { type AddressForm } from "./ProfileInfoCard";
 import ProfileMembershipCard from "./ProfileMembershipCard";
 import ProfileTabs from "./ProfileTabs";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const EMPTY_ADDRESS_FORM: AddressForm = {
   streetAddress: "",
@@ -34,6 +35,7 @@ const EMPTY_ADDRESS_FORM: AddressForm = {
 };
 
 export default function ProfileClient() {
+  const { locale, t } = useLanguage();
   const { user, logout, isAuthenticated, loading, updateCurrentUser } =
     useAuth();
   const toast = useToast();
@@ -43,8 +45,8 @@ export default function ProfileClient() {
   const [tab, setTab] = useState(initialTab);
   const [editMode, setEditMode] = useState(false);
   const [name, setName] = useState(user?.name ?? "");
-  const [phone, setPhone] = useState("Đang cập nhật");
-  const [addressDisplay, setAddressDisplay] = useState("Đang cập nhật");
+  const [phone, setPhone] = useState(t.profile.account.loading);
+  const [addressDisplay, setAddressDisplay] = useState(t.profile.account.loading);
   const [addressForm, setAddressForm] =
     useState<AddressForm>(EMPTY_ADDRESS_FORM);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -158,7 +160,7 @@ export default function ProfileClient() {
             .map((v) => (v || "").trim())
             .filter(Boolean)
             .join(", ");
-          setAddressDisplay(display || "Chưa có địa chỉ");
+          setAddressDisplay(display || t.profile.account.noAddress);
           setCurrentAddressId(selected.addressId);
 
           setAddressForm({
@@ -171,8 +173,8 @@ export default function ProfileClient() {
             wardName: selected.line2 || "",
           });
         } else {
-          setPhone("Chưa có số điện thoại");
-          setAddressDisplay("Chưa có địa chỉ");
+          setPhone(t.profile.account.noPhone);
+          setAddressDisplay(t.profile.account.noAddress);
           setAddressForm(EMPTY_ADDRESS_FORM);
         }
       }
@@ -213,12 +215,12 @@ export default function ProfileClient() {
       setIsUploadingAvatar(true);
       const res = await mediaService.uploadMedia(file, "avatars");
       if (res.isFailure || !res.value?.publicUrl) {
-        throw new Error(res.error?.description || "Không thể tải ảnh lên");
+        throw new Error(res.error?.description || (locale === "vi" ? "Không thể tải ảnh lên" : "Failed to upload image"));
       }
       setAvatarUrl(res.value.publicUrl);
-      toast.success("Đã tải ảnh lên. Nhấn Lưu để cập nhật hồ sơ.");
+      toast.success(locale === "vi" ? "Đã tải ảnh lên. Nhấn Lưu để cập nhật hồ sơ." : "Uploaded image. Click Save to update profile.");
     } catch (err: any) {
-      toast.error(err.message || "Lỗi khi tải ảnh");
+      toast.error(err.message || (locale === "vi" ? "Lỗi khi tải ảnh" : "Error uploading image"));
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -228,16 +230,14 @@ export default function ProfileClient() {
     const normalizedPhone = normalizePhoneNumber(phone);
 
     if (!name.trim() || !normalizedPhone) {
-      setSaveProfileError("Vui lòng nhập đầy đủ họ tên và số điện thoại.");
-      toast.error("Vui lòng nhập đầy đủ họ tên và số điện thoại.");
+      setSaveProfileError(t.profile.account.validationEmpty);
+      toast.error(t.profile.account.validationEmpty);
       return;
     }
 
     if (!isValidVietnamPhoneNumber(normalizedPhone)) {
-      setSaveProfileError(
-        "Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng.",
-      );
-      toast.error("Số điện thoại không hợp lệ.");
+      setSaveProfileError(t.profile.account.validationPhone);
+      toast.error(t.profile.account.validationPhone);
       return;
     }
 
@@ -259,7 +259,7 @@ export default function ProfileClient() {
 
       if (response.isFailure) {
         throw new Error(
-          response.error?.description || "Không thể cập nhật thông tin cá nhân",
+          response.error?.description || (locale === "vi" ? "Không thể cập nhật thông tin cá nhân" : "Failed to update profile"),
         );
       }
 
@@ -319,14 +319,14 @@ export default function ProfileClient() {
 
       updateCurrentUser({ name: name.trim(), avatar: avatarUrl });
 
-      setSaveProfileMessage("Đã cập nhật thông tin cá nhân thành công.");
-      toast.success("Cập nhật thông tin cá nhân thành công.");
+      setSaveProfileMessage(t.profile.account.updateSuccess);
+      toast.success(t.profile.account.updateSuccess);
       setEditMode(false);
     } catch (error) {
       const message =
         error instanceof Error
           ? error.message
-          : "Không thể cập nhật thông tin cá nhân";
+          : (locale === "vi" ? "Không thể cập nhật thông tin cá nhân" : "Failed to update profile");
       setSaveProfileError(message);
       toast.error(message);
     } finally {

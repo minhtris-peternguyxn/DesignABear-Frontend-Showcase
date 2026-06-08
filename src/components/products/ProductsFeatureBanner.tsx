@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -144,7 +145,36 @@ const STATS = [
 ];
 
 export default function ProductsFeatureBanner() {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLElement>(null);
+
+  const translatedFeatures = FEATURES.map((feat) => {
+    let title = "";
+    let desc = "";
+    if (feat.num === "01") {
+      title = t.products.banner.features.aiTitle;
+      desc = t.products.banner.features.aiDesc;
+    } else if (feat.num === "02") {
+      title = t.products.banner.features.materialTitle;
+      desc = t.products.banner.features.materialDesc;
+    } else if (feat.num === "03") {
+      title = t.products.banner.features.designTitle;
+      desc = t.products.banner.features.designDesc;
+    } else {
+      title = t.products.banner.features.deliveryTitle;
+      desc = t.products.banner.features.deliveryDesc;
+    }
+    return { ...feat, title, desc };
+  });
+
+  const translatedStats = STATS.map((stat, idx) => {
+    let label = "";
+    if (idx === 0) label = t.products.banner.stats.families;
+    else if (idx === 1) label = t.products.banner.stats.rating;
+    else if (idx === 2) label = t.products.banner.stats.satisfied;
+    else label = t.products.banner.stats.exclusive;
+    return { ...stat, label };
+  });
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -198,11 +228,11 @@ export default function ProductsFeatureBanner() {
         {/* ── Section header ── */}
         <div className="text-center mb-14 md:mb-18">
           <p className="feat-anim text-[#93BBFF] font-bold text-xs uppercase tracking-[0.22em] mb-4">
-            Tại sao chọn chúng tôi
+            {t.products.banner.subtitle}
           </p>
           <h2 className="feat-anim text-white font-black text-3xl md:text-5xl leading-tight">
-            Thiết kế gấu
-            <span className="text-[#93BBFF]"> theo cách của bạn</span>
+            {t.products.banner.titleLine1}
+            <span className="text-[#93BBFF]">{t.products.banner.titleLine2}</span>
           </h2>
         </div>
 
@@ -210,7 +240,7 @@ export default function ProductsFeatureBanner() {
         <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-stretch mb-14 md:mb-18">
           {/* Feature cards — 2×2 grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-            {FEATURES.map(({ Icon, accent, title, desc, num }) => (
+            {translatedFeatures.map(({ Icon, accent, title, desc, num }) => (
               <div
                 key={num}
                 className="feat-anim group relative bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/9 hover:border-white/20 transition-all duration-300 overflow-hidden"
@@ -260,16 +290,16 @@ export default function ProductsFeatureBanner() {
             {/* CTA card */}
             <div className="feat-anim w-full bg-white/8 border border-white/12 rounded-3xl p-6 text-center">
               <p className="text-white font-black text-lg leading-snug mb-2">
-                Mỗi bé một thế giới riêng
+                {t.products.banner.ctaTitle}
               </p>
               <p className="text-white/50 text-sm mb-5 leading-relaxed">
-                Tích hợp AI · Chất liệu cao cấp · Cá nhân hoá 100%
+                {t.products.banner.ctaSub}
               </p>
               <Link
                 href="/customize"
                 className="block w-full py-3.5 rounded-2xl bg-white text-[#0E2A66] font-black text-sm tracking-wide shadow-xl hover:bg-[#93BBFF] transition-colors duration-300"
               >
-                Thiết kế ngay
+                {t.products.banner.ctaBtn}
               </Link>
             </div>
           </div>
@@ -277,7 +307,7 @@ export default function ProductsFeatureBanner() {
 
         {/* ── Stats bar ── */}
         <div className="feat-anim flex items-stretch bg-white/6 backdrop-blur-md rounded-3xl overflow-hidden border border-white/10">
-          {STATS.map((s, i) => (
+          {translatedStats.map((s, i) => (
             <div
               key={s.label}
               className={`flex-1 text-center py-5 px-3 ${
@@ -303,7 +333,7 @@ export default function ProductsFeatureBanner() {
           <div className="h-px flex-1 bg-white/8" />
         </div>
         <p className="text-center text-white/25 text-xs mt-4 tracking-[0.2em] uppercase">
-          Design A Bear &middot; Mỗi bé một thế giới riêng
+          {t.products.banner.footer}
         </p>
       </div>
     </section>

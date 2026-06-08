@@ -356,6 +356,7 @@ interface Props {
 
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProductCustomize({
   accentColor,
@@ -365,6 +366,7 @@ export default function ProductCustomize({
   const [addingToCart, setAddingToCart] = useState(false);
   const { isAuthenticated } = useAuth();
   const router = useRouter();
+  const { locale, t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -459,20 +461,24 @@ export default function ProductCustomize({
         recs.push({
           subjectId: subjects[0].id,
           themeId: age <= 5 ? "forest" : "astronaut",
-          reason: `Bé ${config.childName || "yêu"} ${age} tuổi phù hợp nhất với ${subjects[0].label.toLowerCase()} qua chủ đề ${age <= 5 ? "Khu rừng ma thuật" : "Phi hành gia"} — kích thích trí tưởng tượng và tư duy.`,
+          reason: locale === "vi" 
+            ? `Bé ${config.childName || "yêu"} ${age} tuổi phù hợp nhất với ${t.customize.subjects[subjects[0].id as keyof typeof t.customize.subjects].toLowerCase()} qua chủ đề ${age <= 5 ? "Khu rừng ma thuật" : "Phi hành gia"} — kích thích trí tưởng tượng và tư duy.`
+            : `Child ${config.childName || "sweetie"} ${age} years old is best suited for ${t.customize.subjects[subjects[0].id as keyof typeof t.customize.subjects].toLowerCase()} through the ${age <= 5 ? "Magic Forest" : "Astronaut"} theme — stimulating imagination and reasoning.`,
         });
       }
       if (subjects.length > 1) {
         recs.push({
           subjectId: subjects[1].id,
           themeId: "music",
-          reason: `${subjects[1].label} kết hợp âm nhạc giúp bé học qua giai điệu, tăng trí nhớ dài hạn đến 60%.`,
+          reason: locale === "vi"
+            ? `${t.customize.subjects[subjects[1].id as keyof typeof t.customize.subjects]} kết hợp âm nhạc giúp bé học qua giai điệu, tăng trí nhớ dài hạn đến 60%.`
+            : `${t.customize.subjects[subjects[1].id as keyof typeof t.customize.subjects]} combined with music helps child learn through melodies, increasing long-term memory up to 60%.`,
         });
       }
       setAiRecs(recs);
       setAiLoading(false);
     }, 1600);
-  }, [config.childAge, config.childName]);
+  }, [config.childAge, config.childName, locale, t]);
 
   const applyRec = (rec: AIRecommendation) => {
     const subject = SUBJECT_OPTIONS.find((s) => s.id === rec.subjectId);
@@ -509,7 +515,6 @@ export default function ProductCustomize({
 
     try {
       setAddingToCart(true);
-      // Pass null for buildId temporarily as requested by user
       await addItem(
         {
           id: product.id,
@@ -524,11 +529,9 @@ export default function ProductCustomize({
         },
         quantity,
       );
-      // alert("Đã thêm gấu tuỳ chỉnh vào giỏ hàng!");
-      // Context will handle opening the drawer
     } catch (err) {
       alert(
-        "Lỗi khi thêm vào giỏ: " + (err instanceof Error ? err.message : ""),
+        (locale === "vi" ? "Lỗi khi thêm vào giỏ: " : "Error adding to cart: ") + (err instanceof Error ? err.message : ""),
       );
     } finally {
       setAddingToCart(false);
@@ -613,15 +616,15 @@ export default function ProductCustomize({
               className="text-xs font-black tracking-[0.35em] uppercase mb-3 relative z-10"
               style={{ color: accentColor }}
             >
-              Tạo ra một người bạn độc nhất
+              {t.customize.title}
             </p>
             <h2
               className="text-4xl md:text-5xl font-black text-[#1A1A2E] leading-tight relative z-10"
               style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Thiết kế gấu
+              {locale === "vi" ? "Thiết kế gấu" : "Design a bear"}
               <br />
-              <span style={{ color: accentColor }}>theo ý con bé</span>
+              <span style={{ color: accentColor }}>{t.customize.subtitle}</span>
             </h2>
           </div>
 
@@ -630,7 +633,7 @@ export default function ProductCustomize({
             {config.fur && (
               <ConfigBadge
                 label={
-                  FUR_OPTIONS.find((f) => f.id === config.fur)?.label ?? ""
+                  t.customize.furs[config.fur as keyof typeof t.customize.furs] ?? ""
                 }
                 color={accentColor}
               />
@@ -638,7 +641,7 @@ export default function ProductCustomize({
             {config.theme && (
               <ConfigBadge
                 label={
-                  THEME_OPTIONS.find((t) => t.id === config.theme)?.label ?? ""
+                  t.customize.themes[config.theme as keyof typeof t.customize.themes] ?? ""
                 }
                 color={accentColor}
               />
@@ -646,14 +649,14 @@ export default function ProductCustomize({
             {config.subjects.map((s) => (
               <ConfigBadge
                 key={s}
-                label={SUBJECT_OPTIONS.find((o) => o.id === s)?.label ?? ""}
+                label={t.customize.subjects[s as keyof typeof t.customize.subjects] ?? ""}
                 color={accentColor}
               />
             ))}
             {config.voice && (
               <ConfigBadge
                 label={
-                  VOICE_OPTIONS.find((v) => v.id === config.voice)?.label ?? ""
+                  t.customize.voices[config.voice as keyof typeof t.customize.voices] ?? ""
                 }
                 color={accentColor}
               />
@@ -663,7 +666,13 @@ export default function ProductCustomize({
 
         {/* ── Step pills nav ── */}
         <div className="customize-header flex items-center gap-2 md:gap-3 mb-10 overflow-x-auto pb-2">
-          {STEPS.map((label, i) => {
+          {[
+            t.customize.steps.appearance,
+            t.customize.steps.theme,
+            t.customize.steps.knowledge,
+            t.customize.steps.voice,
+            t.customize.steps.aiRec,
+          ].map((label, i) => {
             const done = i < step;
             const active = i === step;
             return (
@@ -788,6 +797,7 @@ function CustomizeSummary({
   onAddToCart: () => Promise<void>;
   addingToCart: boolean;
 }) {
+  const { locale, t } = useLanguage();
   const selectedFur = FUR_OPTIONS.find((f) => f.id === config.fur);
   const selectedTheme = THEME_OPTIONS.find((t) => t.id === config.theme);
   const selectedSubjects = SUBJECT_OPTIONS.filter((s) =>
@@ -795,30 +805,33 @@ function CustomizeSummary({
   );
   const selectedVoice = VOICE_OPTIONS.find((v) => v.id === config.voice);
 
+  const selectedFurLabel = selectedFur ? t.customize.furs[selectedFur.id as keyof typeof t.customize.furs] : null;
+  const selectedFurTexture = selectedFur ? t.customize.furs[`${selectedFur.id}Text` as keyof typeof t.customize.furs] : null;
+
   const rows: { label: string; value: string | null; step: StepIndex }[] = [
     {
-      label: "Ngoại hình",
-      value: selectedFur
-        ? `${selectedFur.label} · ${selectedFur.textureLabel}`
+      label: t.customize.steps.appearance,
+      value: selectedFurLabel
+        ? `${selectedFurLabel} · ${selectedFurTexture}`
         : null,
       step: 0,
     },
     {
-      label: "Chủ đề",
-      value: selectedTheme ? selectedTheme.label : null,
+      label: t.customize.steps.theme,
+      value: selectedTheme ? t.customize.themes[selectedTheme.id as keyof typeof t.customize.themes] : null,
       step: 1,
     },
     {
-      label: "Kiến thức",
+      label: t.customize.steps.knowledge,
       value:
         selectedSubjects.length > 0
-          ? selectedSubjects.map((s) => s.label).join(", ")
+          ? selectedSubjects.map((s) => t.customize.subjects[s.id as keyof typeof t.customize.subjects]).join(", ")
           : null,
       step: 2,
     },
     {
-      label: "Giọng nói",
-      value: selectedVoice ? selectedVoice.label : null,
+      label: t.customize.steps.voice,
+      value: selectedVoice ? t.customize.voices[selectedVoice.id as keyof typeof t.customize.voices] : null,
       step: 3,
     },
   ];
@@ -833,7 +846,7 @@ function CustomizeSummary({
           themeId={selectedTheme?.id}
         />
         <p className="absolute bottom-2 right-3 text-[10px] font-bold text-[#9CA3AF] select-none">
-          Kéo để xoay
+          {t.customize.rotatePrompt}
         </p>
       </div>
 
@@ -853,7 +866,7 @@ function CustomizeSummary({
               <p
                 className={`text-sm font-bold mt-0.5 ${row.value ? "text-[#1A1A2E]" : "text-[#D1D5DB]"}`}
               >
-                {row.value || "Chưa chọn"}
+                {row.value || t.customize.notSelected}
               </p>
             </div>
             <span className="text-[#E5E7EB] group-hover:text-[#9CA3AF] transition-colors duration-150">
@@ -869,7 +882,7 @@ function CustomizeSummary({
           htmlFor="child-name"
           className="text-xs font-black uppercase tracking-widest text-[#9CA3AF]"
         >
-          Tên cho gấu
+          {locale === "vi" ? "Tên gấu" : "Bear Name"}
         </label>
         <input
           id="child-name"
@@ -878,7 +891,7 @@ function CustomizeSummary({
           onChange={(e) =>
             setConfig((p) => ({ ...p, childName: e.target.value }))
           }
-          placeholder="Ví dụ: Gấu Brownie"
+          placeholder={t.customize.bearNamePlaceholder}
           maxLength={30}
           className="w-full px-4 py-3 rounded-2xl border-2 border-[#E5E7EB] text-sm font-medium text-[#1A1A2E] placeholder:text-[#D1D5DB] outline-none transition-all duration-200"
           onFocus={(e) => (e.currentTarget.style.borderColor = accentColor)}
@@ -895,15 +908,15 @@ function CustomizeSummary({
         style={{ backgroundColor: accentColor }}
       >
         {addingToCart
-          ? "Đang xử lý..."
+          ? t.productDetail.processing
           : isComplete
-            ? "Thêm vào giỏ hàng"
-            : "Hoàn tất để tiếp tục"}
+            ? t.customize.summary.addToCart
+            : (locale === "vi" ? "Hoàn tất để tiếp tục" : "Complete configuration")}
       </button>
 
       {isComplete && (
         <p className="text-center text-xs text-[#9CA3AF]">
-          Giao hàng trong 5–7 ngày làm việc
+          {t.customize.deliveryNote}
         </p>
       )}
     </div>
@@ -922,17 +935,20 @@ function StepAppearance({
   setConfig: React.Dispatch<React.SetStateAction<CustomizeConfig>>;
   accentColor: string;
 }) {
+  const { locale, t } = useLanguage();
   return (
     <div>
       <StepHeading
         number="01"
-        title="Chọn bộ lông"
-        subtitle="Mỗi màu sắc mang một cá tính riêng cho người bạn nhỏ"
+        title={t.customize.furTitle}
+        subtitle={t.customize.furSubtitle}
         accentColor={accentColor}
       />
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-8">
         {FUR_OPTIONS.map((fur) => {
           const active = config.fur === fur.id;
+          const furLabel = t.customize.furs[fur.id as keyof typeof t.customize.furs];
+          const textureLabel = t.customize.furs[`${fur.id}Text` as keyof typeof t.customize.furs];
           return (
             <button
               key={fur.id}
@@ -958,9 +974,9 @@ function StepAppearance({
                 style={{ backgroundColor: fur.color }}
               />
               <div className="text-center">
-                <p className="font-black text-sm text-[#1A1A2E]">{fur.label}</p>
+                <p className="font-black text-sm text-[#1A1A2E]">{furLabel}</p>
                 <p className="text-xs text-[#9CA3AF] mt-0.5">
-                  {fur.textureLabel}
+                  {textureLabel}
                 </p>
               </div>
             </button>
@@ -972,8 +988,8 @@ function StepAppearance({
       <div className="mt-10">
         <StepHeading
           number="02"
-          title="Tuổi của bé"
-          subtitle={`Hiện tại: ${config.childAge} tuổi — AI sẽ gợi ý nội dung phù hợp`}
+          title={t.customize.ageTitle}
+          subtitle={t.customize.ageSubtitle.replace("{age}", String(config.childAge))}
           accentColor={accentColor}
         />
         <div className="mt-6 flex items-center gap-5">
@@ -1035,17 +1051,20 @@ function StepTheme({
   setConfig: React.Dispatch<React.SetStateAction<CustomizeConfig>>;
   accentColor: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div>
       <StepHeading
         number="02"
-        title="Chủ đề Tính cách"
-        subtitle="Trang phục và câu chuyện sẽ xoay quanh chủ đề bé yêu thích"
+        title={t.customize.themeTitle}
+        subtitle={t.customize.themeSubtitle}
         accentColor={accentColor}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
         {THEME_OPTIONS.map((theme) => {
           const active = config.theme === theme.id;
+          const themeLabel = t.customize.themes[theme.id as keyof typeof t.customize.themes];
+          const themeDescription = t.customize.themes[`${theme.id}Desc` as keyof typeof t.customize.themes];
           return (
             <button
               key={theme.id}
@@ -1072,9 +1091,9 @@ function StepTheme({
                 <ThemeIcon id={theme.id} color={theme.accent} />
               </div>
               <div>
-                <p className="font-black text-[#1A1A2E]">{theme.label}</p>
+                <p className="font-black text-[#1A1A2E]">{themeLabel}</p>
                 <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">
-                  {theme.description}
+                  {themeDescription}
                 </p>
               </div>
             </button>
@@ -1097,6 +1116,7 @@ function StepSubjects({
   toggleSubject: (id: string) => void;
   accentColor: string;
 }) {
+  const { locale, t } = useLanguage();
   const available = SUBJECT_OPTIONS.filter(
     (s) => config.childAge >= s.ageMin && config.childAge <= s.ageMax,
   );
@@ -1108,8 +1128,8 @@ function StepSubjects({
     <div>
       <StepHeading
         number="03"
-        title="Nội dung học tập"
-        subtitle={`Chọn tối đa 3 môn — đã chọn ${config.subjects.length}/3`}
+        title={t.customize.knowledgeTitle}
+        subtitle={t.customize.knowledgeSubtitle.replace("{count}", String(config.subjects.length))}
         accentColor={accentColor}
       />
 
@@ -1117,6 +1137,7 @@ function StepSubjects({
         {available.map((subj) => {
           const active = config.subjects.includes(subj.id);
           const disabled = !active && config.subjects.length >= 3;
+          const subjLabel = t.customize.subjects[subj.id as keyof typeof t.customize.subjects];
           return (
             <button
               key={subj.id}
@@ -1148,7 +1169,7 @@ function StepSubjects({
               >
                 <SubjectIcon id={subj.id} color={subj.accent} />
               </div>
-              <p className="font-black text-sm text-[#1A1A2E]">{subj.label}</p>
+              <p className="font-black text-sm text-[#1A1A2E]">{subjLabel}</p>
             </button>
           );
         })}
@@ -1157,7 +1178,7 @@ function StepSubjects({
       {locked.length > 0 && (
         <div className="mt-6">
           <p className="text-xs font-black uppercase tracking-widest text-[#9CA3AF] mb-3">
-            Mở khoá khi bé lớn hơn
+            {t.customize.unlockOlder}
           </p>
           <div className="flex flex-wrap gap-2">
             {locked.map((subj) => (
@@ -1166,9 +1187,9 @@ function StepSubjects({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#F4F7FF] text-[#9CA3AF]"
               >
                 <SubjectIcon id={subj.id} color="#9CA3AF" />
-                {subj.label}
+                {t.customize.subjects[subj.id as keyof typeof t.customize.subjects]}
                 <span className="text-[10px]">
-                  ({subj.ageMin}–{subj.ageMax}t)
+                  ({subj.ageMin}–{subj.ageMax}{locale === 'vi' ? 't' : 'yo'})
                 </span>
               </span>
             ))}
@@ -1191,6 +1212,7 @@ function StepVoice({
   setConfig: React.Dispatch<React.SetStateAction<CustomizeConfig>>;
   accentColor: string;
 }) {
+  const { locale, t } = useLanguage();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [sysVoices, setSysVoices] = useState<SpeechSynthesisVoice[]>([]);
 
@@ -1274,8 +1296,9 @@ function StepVoice({
       return;
     }
 
-    const utter = new SpeechSynthesisUtterance(voice.sampleText);
-    utter.lang = "vi-VN";
+    const sampleText = t.customize.voices[`${voice.id}-sample` as keyof typeof t.customize.voices] || voice.sampleText;
+    const utter = new SpeechSynthesisUtterance(sampleText);
+    utter.lang = locale === "vi" ? "vi-VN" : "en-US";
     utter.pitch = voice.pitch;
     utter.rate = voice.rate;
     utter.volume = 1;
@@ -1292,7 +1315,7 @@ function StepVoice({
     { label: string; bg: string; color: string; icon: React.ReactNode }
   > = {
     female: {
-      label: "Nữ",
+      label: locale === "vi" ? "Nữ" : "Female",
       bg: "#FFF0F6",
       color: "#FF6B9D",
       icon: (
@@ -1314,7 +1337,7 @@ function StepVoice({
       ),
     },
     male: {
-      label: "Nam",
+      label: locale === "vi" ? "Nam" : "Male",
       bg: "#EFF6FF",
       color: "#3B82F6",
       icon: (
@@ -1337,7 +1360,7 @@ function StepVoice({
       ),
     },
     child: {
-      label: "Trẻ em",
+      label: t.customize.childLabel,
       bg: "#FFFBEB",
       color: "#F59E0B",
       icon: (
@@ -1364,8 +1387,8 @@ function StepVoice({
     <div>
       <StepHeading
         number="04"
-        title="Giọng nói của gấu"
-        subtitle="Chọn giọng phù hợp nhất — nhấn Nghe thử để cảm nhận trước khi quyết định"
+        title={t.customize.voiceTitle}
+        subtitle={t.customize.voiceSubtitle}
         accentColor={accentColor}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
@@ -1373,6 +1396,8 @@ function StepVoice({
           const active = config.voice === voice.id;
           const playing = playingId === voice.id;
           const meta = GENDER_META[voice.gender];
+          const voiceLabel = t.customize.voices[voice.id as keyof typeof t.customize.voices];
+          const voiceDesc = t.customize.voices[`${voice.id}-desc` as keyof typeof t.customize.voices];
           return (
             <button
               key={voice.id}
@@ -1415,9 +1440,9 @@ function StepVoice({
               </div>
 
               {/* Voice name */}
-              <p className="font-black text-[#1A1A2E]">{voice.label}</p>
+              <p className="font-black text-[#1A1A2E]">{voiceLabel}</p>
               <p className="text-xs text-[#6B7280] leading-relaxed">
-                {voice.description}
+                {voiceDesc}
               </p>
 
               {/* Preview button */}
@@ -1430,7 +1455,7 @@ function StepVoice({
                   borderColor: playing ? accentColor : `${accentColor}30`,
                   color: playing ? "white" : accentColor,
                 }}
-                aria-label={playing ? "Dừng" : "Nghe thử"}
+                aria-label={playing ? (locale === "vi" ? "Dừng" : "Stop") : (locale === "vi" ? "Nghe thử" : "Hear Sample")}
               >
                 {playing ? (
                   <>
@@ -1444,7 +1469,7 @@ function StepVoice({
                       <rect x="1" y="1" width="4" height="10" rx="1" />
                       <rect x="7" y="1" width="4" height="10" rx="1" />
                     </svg>
-                    Dừng
+                    {locale === "vi" ? "Dừng" : "Stop"}
                   </>
                 ) : (
                   <>
@@ -1457,7 +1482,7 @@ function StepVoice({
                     >
                       <path d="M2 1.5l9 4.5-9 4.5V1.5Z" />
                     </svg>
-                    Nghe thử
+                    {locale === "vi" ? "Nghe thử" : "Hear Sample"}
                   </>
                 )}
               </button>
@@ -1491,12 +1516,13 @@ function StepAI({
   applyRec: (rec: AIRecommendation) => void;
   accentColor: string;
 }) {
+  const { locale, t } = useLanguage();
   return (
     <div>
       <StepHeading
         number="05"
-        title="AI gợi ý cho bé"
-        subtitle="Dựa trên độ tuổi và sở thích, AI sẽ đề xuất lộ trình học tối ưu"
+        title={t.customize.aiRecTitle}
+        subtitle={t.customize.aiRecSubtitle}
         accentColor={accentColor}
       />
 
@@ -1504,7 +1530,7 @@ function StepAI({
       <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 p-6 rounded-2xl bg-[#F4F7FF] border border-[#E5E7EB]">
         <div className="flex flex-col gap-2">
           <label className="text-xs font-black uppercase tracking-widest text-[#9CA3AF]">
-            Tên bé
+            {t.customize.childNameLabel}
           </label>
           <input
             type="text"
@@ -1512,7 +1538,7 @@ function StepAI({
             onChange={(e) =>
               setConfig((p) => ({ ...p, childName: e.target.value }))
             }
-            placeholder="Ví dụ: Bé Minh"
+            placeholder={t.customize.childNamePlaceholder}
             maxLength={30}
             className="px-4 py-3 rounded-2xl border-2 border-[#E5E7EB] bg-white text-sm font-medium text-[#1A1A2E] placeholder:text-[#D1D5DB] outline-none"
             onFocus={(e) => (e.currentTarget.style.borderColor = accentColor)}
@@ -1521,10 +1547,10 @@ function StepAI({
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-black uppercase tracking-widest text-[#9CA3AF]">
-            Tuổi: {config.childAge}
+            {t.customize.ageTitle}: {config.childAge}
           </label>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#9CA3AF] shrink-0">2t</span>
+            <span className="text-xs text-[#9CA3AF] shrink-0">2{locale === 'vi' ? 't' : 'yo'}</span>
             <div className="relative flex-1 h-10 flex items-center">
               <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 rounded-full bg-[#E5E7EB]" />
               <div
@@ -1552,7 +1578,7 @@ function StepAI({
                 className="absolute inset-0 w-full opacity-0 cursor-pointer"
               />
             </div>
-            <span className="text-xs text-[#9CA3AF] shrink-0">14t</span>
+            <span className="text-xs text-[#9CA3AF] shrink-0">14{locale === 'vi' ? 't' : 'yo'}</span>
           </div>
         </div>
       </div>
@@ -1580,12 +1606,12 @@ function StepAI({
             >
               <path d="M21 12a9 9 0 1 1-6.219-8.56" />
             </svg>
-            AI đang phân tích...
+            {t.customize.aiAnalyzing}
           </>
         ) : (
           <>
             <IconSparkle />
-            Nhận gợi ý từ AI
+            {locale === "vi" ? "Nhận gợi ý từ AI" : "Get AI suggestions"}
           </>
         )}
       </button>
@@ -1597,12 +1623,14 @@ function StepAI({
             className="text-xs font-black uppercase tracking-widest"
             style={{ color: accentColor }}
           >
-            Gợi ý dành cho {config.childName || "bé"}
+            {t.customize.aiSuggestionFor.replace("{name}", config.childName || (locale === "vi" ? "bé" : "child"))}
           </p>
           {aiRecs.map((rec, i) => {
             const subj = SUBJECT_OPTIONS.find((s) => s.id === rec.subjectId);
             const theme = THEME_OPTIONS.find((t) => t.id === rec.themeId);
             if (!subj || !theme) return null;
+            const subjName = t.customize.subjects[subj.id as keyof typeof t.customize.subjects];
+            const themeName = t.customize.themes[theme.id as keyof typeof t.customize.themes];
             return (
               <div
                 key={i}
@@ -1625,7 +1653,7 @@ function StepAI({
                   </div>
                   <div>
                     <p className="font-black text-[#1A1A2E] text-sm">
-                      {subj.label} × {theme.label}
+                      {subjName} × {themeName}
                     </p>
                     <p className="text-xs text-[#6B7280] mt-1 leading-relaxed">
                       {rec.reason}
@@ -1641,7 +1669,7 @@ function StepAI({
                     color: accentColor,
                   }}
                 >
-                  Áp dụng
+                  {t.customize.apply}
                 </button>
               </div>
             );
@@ -1653,7 +1681,7 @@ function StepAI({
             >
               <IconBrain color={accentColor} />
               <p className="text-sm font-bold" style={{ color: accentColor }}>
-                Đã áp dụng gợi ý AI vào cấu hình gấu của bé!
+                {t.customize.appliedSuccess}
               </p>
             </div>
           )}

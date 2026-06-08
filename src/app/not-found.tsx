@@ -5,8 +5,10 @@ import Image from "next/image";
 import { useEffect, useRef } from "react";
 import { IoArrowBack, IoHomeOutline, IoBagOutline } from "react-icons/io5";
 import gsap from "gsap";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function NotFound() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const bearRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -130,7 +132,7 @@ export default function NotFound() {
         >
           <Image
             src="/teddy_bear.png"
-            alt="Gấu bông lạc đường"
+            alt={t.notFound.altText}
             fill
             className="object-contain drop-shadow-2xl"
             priority
@@ -160,12 +162,11 @@ export default function NotFound() {
             fontSize: "clamp(1.6rem, 4vw, 2.4rem)",
           }}
         >
-          Ôi! Chú gấu bị lạc rồi...
+          {t.notFound.title}
         </h1>
 
         <p className="text-[#6B7280] text-base leading-relaxed mb-8">
-          Trang bạn đang tìm kiếm không tồn tại hoặc đã được chuyển đi nơi khác.
-          Hãy để chú gấu dẫn bạn trở về nhé!
+          {t.notFound.description}
         </p>
 
         {/* CTA Buttons */}
@@ -175,7 +176,7 @@ export default function NotFound() {
             className="flex items-center justify-center gap-2 bg-[#17409A] text-white font-bold px-8 py-4 rounded-2xl shadow-lg hover:bg-[#0E2A66] transition-colors duration-200"
           >
             <IoHomeOutline className="text-xl" />
-            Về trang chủ
+            {t.notFound.goHome}
           </Link>
 
           <Link
@@ -183,7 +184,7 @@ export default function NotFound() {
             className="flex items-center justify-center gap-2 bg-white text-[#17409A] font-bold px-8 py-4 rounded-2xl border-2 border-[#17409A] hover:bg-[#17409A] hover:text-white transition-colors duration-200 shadow-lg"
           >
             <IoBagOutline className="text-xl" />
-            Xem sản phẩm
+            {t.notFound.viewProducts}
           </Link>
         </div>
 
@@ -193,7 +194,7 @@ export default function NotFound() {
           className="mt-6 flex items-center gap-2 text-[#6B7280] hover:text-[#17409A] text-sm font-medium transition-colors mx-auto"
         >
           <IoArrowBack className="text-base" />
-          Quay lại trang trước
+          {t.notFound.goBack}
         </button>
       </div>
 

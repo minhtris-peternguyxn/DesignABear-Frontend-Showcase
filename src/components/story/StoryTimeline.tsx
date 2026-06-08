@@ -4,6 +4,7 @@ import {
   IoSparklesOutline,
   IoPeopleOutline,
 } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { STORY_MILESTONES } from "@/data/story";
 import type { StoryMilestoneIcon } from "@/types/story";
 
@@ -15,25 +16,52 @@ const ICON_BY_KEY: Record<StoryMilestoneIcon, React.ReactNode> = {
 };
 
 export default function StoryTimeline() {
+  const { t } = useLanguage();
+
+  const translatedMilestones = [
+    {
+      ...STORY_MILESTONES[0],
+      title: t.story.timeline.milestones.m1.title,
+      description: t.story.timeline.milestones.m1.description,
+      impact: t.story.timeline.milestones.m1.impact,
+    },
+    {
+      ...STORY_MILESTONES[1],
+      title: t.story.timeline.milestones.m2.title,
+      description: t.story.timeline.milestones.m2.description,
+      impact: t.story.timeline.milestones.m2.impact,
+    },
+    {
+      ...STORY_MILESTONES[2],
+      title: t.story.timeline.milestones.m3.title,
+      description: t.story.timeline.milestones.m3.description,
+      impact: t.story.timeline.milestones.m3.impact,
+    },
+    {
+      ...STORY_MILESTONES[3],
+      title: t.story.timeline.milestones.m4.title,
+      description: t.story.timeline.milestones.m4.description,
+      impact: t.story.timeline.milestones.m4.impact,
+    },
+  ];
+
   return (
     <section className="bg-white py-20 md:py-28">
       <div className="max-w-screen-2xl mx-auto px-8 md:px-16">
         <div className="relative">
           <span className="story-watermark hidden md:block pointer-events-none absolute right-0 top-0 text-[90px] md:text-[120px] font-black text-[#17409A] opacity-[0.06] leading-none">
-            02
+            {t.story.timeline.watermark}
           </span>
           <div className="story-panel mb-12 md:mb-16">
             <h2 className="text-3xl md:text-4xl font-black text-[#17409A]">
               <span className="story-chapter-title story-reveal-wrap block overflow-hidden">
                 <span className="story-reveal-line block">
-                  Chương 02 - Hành trình phát triển
+                  {t.story.timeline.chapter}
                 </span>
               </span>
             </h2>
             <p className="mt-3 text-[#6B7280] text-base md:text-lg max-w-3xl">
-              Mỗi cột mốc là một bước để chúng tôi đưa công nghệ gần hơn với gia
-              đình, đồng thời giữ trọn trái tim trẻ thơ trong từng trải nghiệm
-              học tập.
+              {t.story.timeline.desc}
             </p>
           </div>
 
@@ -41,7 +69,7 @@ export default function StoryTimeline() {
             <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#E5E7EB] -translate-x-1/2" />
 
             <div className="grid gap-6 md:gap-8">
-              {STORY_MILESTONES.map((milestone, idx) => (
+              {translatedMilestones.map((milestone, idx) => (
                 <article
                   key={milestone.id}
                   className={`story-panel ${idx % 2 === 0 ? "story-scene-left" : "story-scene-right"} md:w-[calc(50%-18px)] rounded-3xl border border-[#E5E7EB] p-5 md:p-7 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${
@@ -81,3 +109,4 @@ export default function StoryTimeline() {
     </section>
   );
 }
+

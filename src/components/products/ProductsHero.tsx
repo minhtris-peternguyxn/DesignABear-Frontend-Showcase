@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /* ── Inline paw SVG ────────────────────────── */
 function PawSVG({ size, color }: { size: number; color: string }) {
@@ -34,6 +35,8 @@ const PAW_POSITIONS: PawPos[] = [
 ];
 
 export default function ProductsHero() {
+  const { t } = useLanguage();
+
   return (
     <section className="relative w-full h-175 overflow-hidden">
       <Image
@@ -69,16 +72,15 @@ export default function ProductsHero() {
       <div className="absolute inset-0 flex items-end pb-16 md:pb-20">
         <div className="max-w-screen-2xl w-full mx-auto px-6 md:px-16">
           <p className="text-white/75 font-bold text-xs uppercase tracking-widest mb-3">
-            Bộ sưu tập 2026
+            {t.products.hero.collection}
           </p>
           <h1 className="text-white font-black text-3xl md:text-5xl lg:text-6xl leading-tight mb-4 drop-shadow-md">
-            Khám phá
+            {t.products.hero.titleLine1}
             <br />
-            <span className="text-[#93BBFF]">sản phẩm</span>
+            <span className="text-[#93BBFF]">{t.products.hero.titleLine2}</span>
           </h1>
           <p className="text-white/70 text-sm md:text-base max-w-xs leading-relaxed">
-            Hàng trăm gấu bông thông minh —<br />
-            mỗi bé một thế giới riêng.
+            {t.products.hero.description}
           </p>
         </div>
       </div>

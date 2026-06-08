@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { type ProductItem } from "@/types/products";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 /* ── Inline paw SVG ── */
@@ -46,6 +47,7 @@ export default function ProductImageSection({
   overrideMainImage,
   isAIProcessorSelected,
 }: Props) {
+  const { t } = useLanguage();
   const accent = product.badgeColor || "#17409A";
 
   // Build gallery: use overrideMainImage if provided, otherwise standard product images
@@ -111,10 +113,10 @@ export default function ProductImageSection({
         {/* Edition watermark */}
         <div className="absolute bottom-7 left-7 z-10 pointer-events-none">
           <p
-            className="text-xs tracking-[0.3em] uppercase font-bold mb-0.5"
+            className="text-xs tracking-[0.35em] uppercase font-bold mb-0.5"
             style={{ color: "rgba(255,255,255,0.4)" }}
           >
-            Smart Bear
+            {t.productDetail.imageSection.smartCoreActive}
           </p>
           <p
             className="text-6xl font-black leading-none"
@@ -153,7 +155,7 @@ export default function ProductImageSection({
                     ? "0 0 0 3px " + accent + ", 0 4px 16px rgba(0,0,0,0.4)"
                     : "0 2px 6px rgba(0,0,0,0.3)",
               }}
-              aria-label={`Ảnh ${i + 1}`}
+              aria-label={`${t.productDetail.imageSection.imageLabel} ${i + 1}`}
             >
               <Image
                 src={src}
@@ -190,11 +192,11 @@ export default function ProductImageSection({
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#4ECDC4] shadow-[0_0_8px_#4ECDC4]"></div>
                   <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#4ECDC4]">
-                    Smart Core Active
+                    {t.productDetail.imageSection.smartCoreActive}
                   </p>
                 </div>
                 <h4 className="text-white font-bold text-sm tracking-wide">
-                  Gấu Bông Thông Minh AI
+                  {t.productDetail.imageSection.aiBearTitle}
                 </h4>
               </div>
             </div>
@@ -205,19 +207,19 @@ export default function ProductImageSection({
                   <svg className="w-3.5 h-3.5 text-[#4ECDC4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Giao tiếp 2 chiều tự nhiên
+                  {t.productDetail.imageSection.aiDesc1}
                 </li>
                 <li className="flex items-center gap-3 text-[11px] text-white/70 font-medium tracking-wide">
                   <svg className="w-3.5 h-3.5 text-[#4ECDC4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Phát triển tư duy & Ngoại ngữ
+                  {t.productDetail.imageSection.aiDesc2}
                 </li>
                 <li className="flex items-center gap-3 text-[11px] text-white/70 font-medium tracking-wide">
                   <svg className="w-3.5 h-3.5 text-[#4ECDC4]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Tương tác gia đình từ xa
+                  {t.productDetail.imageSection.aiDesc3}
                 </li>
               </ul>
             </div>
@@ -238,7 +240,7 @@ export default function ProductImageSection({
       {/* ── Popular ribbon ── */}
       {product.popular && (
         <div className="absolute top-5 -left-2 z-20 bg-[#FFD93D] text-[#1A1A2E] text-xs font-black px-4 py-1.5 shadow-lg tracking-widest uppercase">
-          <span>Bán chạy</span>
+          <span>{t.productDetail.imageSection.bestSeller}</span>
           <span className="absolute -bottom-2 left-0 border-l-8 border-t-8 border-l-transparent border-t-[#c8a900]" />
         </div>
       )}

@@ -4,43 +4,38 @@ import {
   IoLogoFacebook,
   IoLogoYoutube,
 } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const channels = [
+const channelsData = [
   {
-    title: "Trò chuyện trực tiếp",
-    description:
-      "Đội ngũ tư vấn đồng hành trong từng bước chọn gấu phù hợp cho bé.",
-    detail: "8:00 - 21:00 mỗi ngày",
+    id: "c1",
     icon: IoChatboxEllipsesOutline,
     color: "#17409A",
+    defaultDetail: "8:00 - 21:00 mỗi ngày",
   },
   {
-    title: "Email học vụ",
-    description:
-      "Gửi góp ý về nội dung học tập, lộ trình AI và tài nguyên phụ huynh.",
-    detail: "hello@designabear.vn",
+    id: "c2",
     icon: IoMailOutline,
     color: "#4ECDC4",
+    defaultDetail: "hello@designabear.vn",
   },
   {
-    title: "Cộng đồng Facebook",
-    description:
-      "Tham gia nhóm phụ huynh để chia sẻ kinh nghiệm cùng chuyên gia giáo dục.",
-    detail: "35.000+ thành viên",
+    id: "c3",
     icon: IoLogoFacebook,
     color: "#7C5CFC",
+    defaultDetail: "35.000+ thành viên",
   },
   {
-    title: "Video hướng dẫn",
-    description:
-      "Xem kho nội dung setup, chăm sóc và khai thác tính năng thông minh.",
-    detail: "Cập nhật 2 video/tuần",
+    id: "c4",
     icon: IoLogoYoutube,
     color: "#FF8C42",
+    defaultDetail: "Cập nhật 2 video/tuần",
   },
 ];
 
 export default function ConnectWays() {
+  const { locale, t } = useLanguage();
+  
   return (
     <section className="bg-white py-18 md:py-24">
       <div className="max-w-screen-2xl mx-auto px-8 md:px-16">
@@ -51,25 +46,36 @@ export default function ConnectWays() {
           <div className="connect-ac mb-10 md:mb-14 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
             <div>
               <p className="connect-chapter-title connect-reveal text-sm font-bold tracking-wider uppercase text-[#9CA3AF]">
-                Điểm chạm
+                {t.connect.ways.badge}
               </p>
               <h2 className="connect-reveal mt-3 text-3xl md:text-4xl font-black text-[#17409A]">
-                4 cách kết nối linh hoạt
+                {t.connect.ways.title}
               </h2>
             </div>
             <p className="connect-ac max-w-2xl text-[#6B7280] text-base md:text-lg">
-              Bạn có thể chọn bất kỳ kênh nào phù hợp với thói quen của gia
-              đình. Mỗi kênh đều được chuẩn hóa để mang lại phản hồi rõ ràng và
-              trách nhiệm.
+              {t.connect.ways.desc}
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-5">
-            {channels.map((item) => {
+            {channelsData.map((item) => {
               const Icon = item.icon;
+              const title = t.connect.ways[`${item.id}Title` as keyof typeof t.connect.ways] as string;
+              const description = t.connect.ways[`${item.id}Desc` as keyof typeof t.connect.ways] as string;
+              
+              // Resolve detail dynamically
+              let detail = item.defaultDetail;
+              if (item.id === "c1") {
+                detail = t.connect.ways.c1Detail || item.defaultDetail;
+              } else if (item.id === "c3") {
+                detail = t.connect.ways.c3Detail || item.defaultDetail;
+              } else if (item.id === "c4") {
+                detail = locale === "vi" ? "Cập nhật 2 video/tuần" : "Updated 2 videos/week";
+              }
+
               return (
                 <article
-                  key={item.title}
+                  key={item.id}
                   className="connect-ac rounded-3xl border border-[#E5E7EB] bg-[#F9FAFB] p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
                 >
                   <div
@@ -79,16 +85,16 @@ export default function ConnectWays() {
                     <Icon className="text-2xl" />
                   </div>
                   <h3 className="mt-4 text-xl font-black text-[#1A1A2E] leading-snug">
-                    {item.title}
+                    {title}
                   </h3>
                   <p className="mt-2 text-sm text-[#6B7280] leading-relaxed">
-                    {item.description}
+                    {description}
                   </p>
                   <p
                     className="mt-4 text-sm font-bold"
                     style={{ color: item.color }}
                   >
-                    {item.detail}
+                    {detail}
                   </p>
                 </article>
               );

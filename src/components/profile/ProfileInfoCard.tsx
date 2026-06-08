@@ -11,6 +11,7 @@ import {
   IoChevronDownOutline,
 } from "react-icons/io5";
 import type { User } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function normalizeLocationName(v: string): string {
   return v
@@ -39,6 +40,7 @@ function CompactSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const { locale } = useLanguage();
 
   const filtered = options.filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase()),
@@ -59,7 +61,7 @@ function CompactSelect({
         <span
           className={`text-xs font-bold truncate ${selected ? "text-[#1A1A2E]" : "text-[#9CA3AF]"}`}
         >
-          {selected?.label ?? placeholder ?? "Chọn..."}
+          {selected?.label ?? placeholder ?? (locale === "vi" ? "Chọn..." : "Select...")}
         </span>
         <IoChevronDownOutline
           className={`text-[#9CA3AF] shrink-0 transition-transform text-xs ${open ? "rotate-180" : ""}`}
@@ -73,14 +75,14 @@ function CompactSelect({
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm kiếm..."
+              placeholder={locale === "vi" ? "Tìm kiếm..." : "Search..."}
               className="w-full bg-[#F4F7FF] rounded-xl px-3.5 py-2 text-xs font-semibold text-[#1A1A2E] outline-none border-2 border-transparent focus:border-[#17409A]/30 transition-all duration-200"
             />
           </div>
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="text-center text-xs text-[#9CA3AF] py-3 font-medium">
-                Không tìm thấy
+                {locale === "vi" ? "Không tìm thấy" : "No results found"}
               </p>
             ) : (
               filtered.map((o) => (
@@ -150,6 +152,7 @@ export default function ProfileInfoCard({
   setAddressForm,
   onSave,
 }: Props) {
+  const { locale, t } = useLanguage();
   const [provinces, setProvinces] = useState<
     { idProvince: string; name: string }[]
   >([]);
@@ -286,11 +289,11 @@ export default function ProfileInfoCard({
 
       <div className="flex items-center justify-between mb-6 relative z-10">
         <p className="text-[9px] font-black tracking-[0.2em] uppercase text-[#9CA3AF]">
-          Thông tin cá nhân
+          {locale === "vi" ? "Thông tin cá nhân" : "Personal Information"}
         </p>
         {editMode && (
           <span className="text-[9px] font-black text-[#17409A] bg-[#17409A]/8 px-2.5 py-1 rounded-full shadow-sm">
-            Đang chỉnh sửa
+            {locale === "vi" ? "Đang chỉnh sửa" : "Editing"}
           </span>
         )}
       </div>
@@ -298,7 +301,7 @@ export default function ProfileInfoCard({
       <div className="flex flex-col gap-5 relative z-10">
         <div>
           <label className="text-[9px] font-black tracking-widest text-[#9CA3AF] uppercase mb-1.5 block">
-            Họ và tên
+            {t.profile.account.fullName}
           </label>
           {editMode ? (
             <input
@@ -318,7 +321,7 @@ export default function ProfileInfoCard({
 
         <div>
           <label className="text-[9px] font-black tracking-widest text-[#9CA3AF] uppercase mb-1.5 block">
-            Email
+            {t.profile.account.email}
           </label>
           <div className="flex items-center gap-3 bg-[#F4F7FF]/30 p-3 rounded-2xl border border-[#F4F7FF]">
             <div className="w-9 h-9 rounded-xl bg-[#17409A]/5 text-[#17409A] flex items-center justify-center shrink-0">
@@ -329,14 +332,14 @@ export default function ProfileInfoCard({
             </span>
             <IoCheckmarkCircle
               className="text-[#4ECDC4] text-xl shrink-0"
-              title="Đã xác thực"
+              title={locale === "vi" ? "Đã xác thực" : "Verified"}
             />
           </div>
         </div>
 
         <div>
           <label className="text-[9px] font-black tracking-widest text-[#9CA3AF] uppercase mb-1.5 block">
-            Số điện thoại
+            {t.profile.account.phone}
           </label>
           {editMode ? (
             <input
@@ -356,12 +359,12 @@ export default function ProfileInfoCard({
 
         <div>
           <label className="text-[9px] font-black tracking-widest text-[#9CA3AF] uppercase mb-1.5 block">
-            Địa chỉ
+            {t.profile.account.address}
           </label>
           {editMode ? (
             <div className="flex flex-col gap-3">
               <CompactSelect
-                label="Tỉnh / Thành phố"
+                label={t.checkout.delivery.city}
                 value={addressForm.province}
                 onChange={selectProvince}
                 options={provinces.map((p) => ({
@@ -370,13 +373,13 @@ export default function ProfileInfoCard({
                 }))}
                 disabled={provinces.length === 0}
                 placeholder={
-                  provinces.length === 0 ? "Đang tải..." : "Chọn tỉnh/thành phố"
+                  provinces.length === 0 ? t.checkout.delivery.loading : (locale === "vi" ? "Chọn tỉnh/thành phố" : "Select city/province")
                 }
               />
 
               <div className="grid grid-cols-2 gap-3">
                 <CompactSelect
-                  label="Quận / Huyện"
+                  label={t.checkout.delivery.district}
                   value={addressForm.district}
                   onChange={selectDistrict}
                   options={districts.map((d) => ({
@@ -384,10 +387,10 @@ export default function ProfileInfoCard({
                     label: d.name,
                   }))}
                   disabled={!addressForm.province || loadingD}
-                  placeholder={loadingD ? "Đang tải..." : "Chọn quận/huyện"}
+                  placeholder={loadingD ? t.checkout.delivery.loading : (locale === "vi" ? "Chọn quận/huyện" : "Select district")}
                 />
                 <CompactSelect
-                  label="Phường / Xã"
+                  label={t.checkout.delivery.ward}
                   value={addressForm.ward}
                   onChange={selectWard}
                   options={communes.map((c) => ({
@@ -395,13 +398,13 @@ export default function ProfileInfoCard({
                     label: c.name,
                   }))}
                   disabled={!addressForm.district || loadingC}
-                  placeholder={loadingC ? "Đang tải..." : "Chọn phường/xã"}
+                  placeholder={loadingC ? t.checkout.delivery.loading : (locale === "vi" ? "Chọn phường/xã" : "Select ward")}
                 />
               </div>
 
               <div>
                 <label className="text-[9px] font-black tracking-widest text-[#9CA3AF] uppercase mb-1.5 block">
-                  Địa chỉ cụ thể
+                  {t.checkout.delivery.address}
                 </label>
                 <div className="flex items-center gap-3 bg-[#F4F7FF] rounded-2xl px-4 py-3 border-2 border-transparent focus-within:border-[#17409A]/30 transition-all duration-200 shadow-sm">
                   <IoLocationOutline className="text-[#9CA3AF] text-lg shrink-0" />
@@ -413,7 +416,7 @@ export default function ProfileInfoCard({
                         streetAddress: e.target.value,
                       })
                     }
-                    placeholder="Số nhà, tên đường..."
+                    placeholder={t.checkout.delivery.addressPlaceholder}
                     className="flex-1 bg-transparent outline-none text-xs font-bold text-[#1A1A2E] placeholder:text-[#9CA3AF] placeholder:font-normal"
                   />
                 </div>
@@ -437,7 +440,7 @@ export default function ProfileInfoCard({
             disabled={saving || !name.trim() || !phone.trim()}
             className="w-full bg-[#17409A] text-white font-black text-sm py-3.5 rounded-2xl hover:bg-[#0E2A66] transition-all duration-300 shadow-xl shadow-[#17409A]/20 mt-2 disabled:opacity-50 hover:-translate-y-0.5"
           >
-            {saving ? "Đang lưu..." : "Lưu thay đổi"}
+            {saving ? t.profile.account.saving : t.profile.account.saveBtn}
           </button>
         )}
 

@@ -10,12 +10,14 @@ import {
   IoCloseOutline,
   IoLockClosedOutline,
 } from "react-icons/io5";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   onLogout: () => void;
 }
 
 export default function SecurityTab({ onLogout }: Props) {
+  const { locale, t } = useLanguage();
   const [showPwModal, setShowPwModal] = useState(false);
   const [twoFA, setTwoFA] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -30,15 +32,15 @@ export default function SecurityTab({ onLogout }: Props) {
   const handleChangePw = () => {
     setPwError("");
     if (!currentPw || !newPw || !confirmPw) {
-      setPwError("Vui lòng điền đầy đủ thông tin.");
+      setPwError(locale === "vi" ? "Vui lòng điền đầy đủ thông tin." : "Please fill in all fields.");
       return;
     }
     if (newPw.length < 6) {
-      setPwError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      setPwError(locale === "vi" ? "Mật khẩu mới phải có ít nhất 6 ký tự." : "New password must be at least 6 characters.");
       return;
     }
     if (newPw !== confirmPw) {
-      setPwError("Mật khẩu xác nhận không khớp.");
+      setPwError(locale === "vi" ? "Mật khẩu xác nhận không khớp." : "Confirm password does not match.");
       return;
     }
     setPwSuccess(true);
@@ -64,7 +66,7 @@ export default function SecurityTab({ onLogout }: Props) {
     <>
       <div className="flex flex-col gap-4">
         <p className="text-[#1A1A2E] font-black text-base mb-1">
-          Bảo mật tài khoản
+          {locale === "vi" ? "Bảo mật tài khoản" : "Account Security"}
         </p>
 
         {/* Đổi mật khẩu */}
@@ -79,9 +81,9 @@ export default function SecurityTab({ onLogout }: Props) {
             />
           </div>
           <div className="flex-1">
-            <p className="text-[#1A1A2E] font-bold text-sm">Đổi mật khẩu</p>
+            <p className="text-[#1A1A2E] font-bold text-sm">{t.profile.security.title}</p>
             <p className="text-[#9CA3AF] text-[11px] font-semibold">
-              Cập nhật mật khẩu định kỳ để bảo vệ tài khoản
+              {locale === "vi" ? "Cập nhật mật khẩu định kỳ để bảo vệ tài khoản" : "Update your password regularly to protect your account"}
             </p>
           </div>
           <button
@@ -89,7 +91,7 @@ export default function SecurityTab({ onLogout }: Props) {
             className="cursor-pointer text-xs font-black px-4 py-2 rounded-xl hover:opacity-80 transition-opacity shrink-0"
             style={{ color: "#17409A", backgroundColor: "#17409A18" }}
           >
-            Đổi ngay
+            {locale === "vi" ? "Đổi ngay" : "Change now"}
           </button>
         </div>
 
@@ -105,9 +107,11 @@ export default function SecurityTab({ onLogout }: Props) {
             />
           </div>
           <div className="flex-1">
-            <p className="text-[#1A1A2E] font-bold text-sm">Xác thực 2 bước</p>
+            <p className="text-[#1A1A2E] font-bold text-sm">
+              {locale === "vi" ? "Xác thực 2 bước" : "2-Step Verification"}
+            </p>
             <p className="text-[#9CA3AF] text-[11px] font-semibold">
-              Thêm lớp bảo mật cho tài khoản của bạn
+              {locale === "vi" ? "Thêm lớp bảo mật cho tài khoản của bạn" : "Add an extra layer of security to your account"}
             </p>
           </div>
           <button
@@ -128,10 +132,10 @@ export default function SecurityTab({ onLogout }: Props) {
         <div className="mt-2 bg-[#FF6B9D]/5 border border-[#FF6B9D]/20 rounded-2xl p-4 flex items-center justify-between">
           <div>
             <p className="text-[#FF6B9D] font-bold text-sm">
-              Đăng xuất khỏi tất cả thiết bị
+              {locale === "vi" ? "Đăng xuất khỏi tất cả thiết bị" : "Log out from all devices"}
             </p>
             <p className="text-[#9CA3AF] text-[11px] font-semibold">
-              Kết thúc tất cả phiên đăng nhập
+              {locale === "vi" ? "Kết thúc tất cả phiên đăng nhập" : "End all active login sessions"}
             </p>
           </div>
           <button
@@ -139,7 +143,7 @@ export default function SecurityTab({ onLogout }: Props) {
             className="cursor-pointer flex items-center gap-1.5 text-[#FF6B9D] text-xs font-black bg-[#FF6B9D]/10 hover:bg-[#FF6B9D]/20 px-4 py-2 rounded-xl transition-colors shrink-0"
           >
             <IoLogOutOutline />
-            Đăng xuất
+            {t.header.logout}
           </button>
         </div>
       </div>
@@ -166,10 +170,10 @@ export default function SecurityTab({ onLogout }: Props) {
                 </div>
                 <div>
                   <p className="text-[#1A1A2E] font-black text-lg leading-tight">
-                    Đổi mật khẩu
+                    {t.profile.security.title}
                   </p>
                   <p className="text-[#9CA3AF] text-[11px] font-semibold">
-                    Cập nhật mật khẩu bảo mật
+                    {locale === "vi" ? "Cập nhật mật khẩu bảo mật" : "Update secure password"}
                   </p>
                 </div>
               </div>
@@ -185,14 +189,14 @@ export default function SecurityTab({ onLogout }: Props) {
               {/* Current password */}
               <div>
                 <label className="text-[10px] font-black tracking-widest text-[#9CA3AF] uppercase mb-2 block">
-                  Mật khẩu hiện tại
+                  {t.profile.security.oldPassword}
                 </label>
                 <div className="relative">
                   <input
                     type={showCurrent ? "text" : "password"}
                     value={currentPw}
                     onChange={(e) => setCurrentPw(e.target.value)}
-                    placeholder="Nhập mật khẩu hiện tại"
+                    placeholder={locale === "vi" ? "Nhập mật khẩu hiện tại" : "Enter current password"}
                     className="w-full bg-[#F4F7FF] rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-[#1A1A2E] outline-none border-2 border-transparent focus:border-[#17409A]/30 transition-colors placeholder:font-normal placeholder:text-[#C4C9D4]"
                   />
                   <button
@@ -212,14 +216,14 @@ export default function SecurityTab({ onLogout }: Props) {
               {/* New password */}
               <div>
                 <label className="text-[10px] font-black tracking-widest text-[#9CA3AF] uppercase mb-2 block">
-                  Mật khẩu mới
+                  {t.profile.security.newPassword}
                 </label>
                 <div className="relative">
                   <input
                     type={showNew ? "text" : "password"}
                     value={newPw}
                     onChange={(e) => setNewPw(e.target.value)}
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder={locale === "vi" ? "Tối thiểu 6 ký tự" : "At least 6 characters"}
                     className="w-full bg-[#F4F7FF] rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-[#1A1A2E] outline-none border-2 border-transparent focus:border-[#17409A]/30 transition-colors placeholder:font-normal placeholder:text-[#C4C9D4]"
                   />
                   <button
@@ -239,14 +243,14 @@ export default function SecurityTab({ onLogout }: Props) {
               {/* Confirm password */}
               <div>
                 <label className="text-[10px] font-black tracking-widest text-[#9CA3AF] uppercase mb-2 block">
-                  Xác nhận mật khẩu mới
+                  {t.profile.security.confirmPassword}
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirm ? "text" : "password"}
                     value={confirmPw}
                     onChange={(e) => setConfirmPw(e.target.value)}
-                    placeholder="Nhập lại mật khẩu mới"
+                    placeholder={locale === "vi" ? "Nhập lại mật khẩu mới" : "Re-enter new password"}
                     className="w-full bg-[#F4F7FF] rounded-2xl px-5 py-3.5 pr-12 text-sm font-bold text-[#1A1A2E] outline-none border-2 border-transparent focus:border-[#17409A]/30 transition-colors placeholder:font-normal placeholder:text-[#C4C9D4]"
                   />
                   <button
@@ -274,7 +278,7 @@ export default function SecurityTab({ onLogout }: Props) {
               {pwSuccess && (
                 <div className="bg-[#4ECDC4]/10 border border-[#4ECDC4]/30 rounded-xl px-4 py-3 text-center">
                   <p className="text-[#4ECDC4] text-sm font-black">
-                    ✓ Đổi mật khẩu thành công!
+                    ✓ {t.profile.security.successMsg}
                   </p>
                 </div>
               )}
@@ -286,13 +290,13 @@ export default function SecurityTab({ onLogout }: Props) {
                     onClick={closeModal}
                     className="cursor-pointer flex-1 py-3.5 rounded-2xl bg-[#F4F7FF] text-[#6B7280] font-black text-sm hover:bg-[#E8EEF9] transition-colors"
                   >
-                    Hủy
+                    {locale === "vi" ? "Hủy" : "Cancel"}
                   </button>
                   <button
                     onClick={handleChangePw}
                     className="cursor-pointer flex-1 py-3.5 rounded-2xl bg-[#17409A] text-white font-black text-sm hover:bg-[#0E2A66] transition-colors shadow-lg shadow-[#17409A]/25"
                   >
-                    Xác nhận
+                    {locale === "vi" ? "Xác nhận" : "Confirm"}
                   </button>
                 </div>
               )}

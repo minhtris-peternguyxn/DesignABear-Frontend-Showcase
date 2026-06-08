@@ -14,9 +14,9 @@ import type { DeliveryForm } from "./checkout.types";
 import { deliverySchema } from "./checkout.config";
 import {
   FormField,
-  SelectField,
   SearchableSelectField,
 } from "./checkout.fields";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 function normalizeLocationName(value: string): string {
   return value
@@ -37,6 +37,7 @@ export function StepDelivery({
   onChange: (f: DeliveryForm) => void;
   showErrors?: boolean;
 }) {
+  const { locale, t } = useLanguage();
   const [provinces, setProvinces] = useState<
     Array<{ idProvince: string; name: string }>
   >([]);
@@ -113,6 +114,8 @@ export function StepDelivery({
       ...form,
       district: matched.idDistrict,
       districtName: matched.name,
+      ward: "",
+      wardName: "",
     });
   }, [form, districts, onChange]);
 
@@ -152,7 +155,28 @@ export function StepDelivery({
       address: form.address,
     });
     if (result.success) return undefined;
-    return result.error.issues.find((i) => i.path[0] === key)?.message;
+    const issue = result.error.issues.find((i) => i.path[0] === key);
+    if (!issue) return undefined;
+
+    if (locale === "en") {
+      switch (key) {
+        case "name":
+          return "Name must be at least 2 characters";
+        case "phone":
+          return "Invalid phone number";
+        case "email":
+          return "Invalid email format";
+        case "province":
+          return "Please select a province/city";
+        case "district":
+          return "Please select a district";
+        case "ward":
+          return "Please select a ward/commune";
+        case "address":
+          return "Address must be at least 5 characters";
+      }
+    }
+    return issue.message;
   };
 
   const selectProvince = (id: string) => {
@@ -211,12 +235,12 @@ export function StepDelivery({
           <div>
             <h2
               className="text-xl font-black"
-              style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
+              style={{ color: "#1A1A2E", fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Giao hàng đến đâu?
+              {t.checkout.delivery.title}
             </h2>
             <p className="text-xs" style={{ color: "#9CA3AF" }}>
-              Điền địa chỉ để chúng tôi gửi gấu tận nơi nhé
+              {t.checkout.delivery.subtitle}
             </p>
           </div>
         </div>
@@ -225,7 +249,7 @@ export function StepDelivery({
           <div className="grid grid-cols-2 gap-4">
             <FormField
               icon={IoPersonOutline}
-              label="Họ và tên"
+              label={t.checkout.delivery.fullName}
               value={form.name}
               onChange={set("name")}
               required
@@ -233,7 +257,7 @@ export function StepDelivery({
             />
             <FormField
               icon={IoCallOutline}
-              label="Số điện thoại"
+              label={t.checkout.delivery.phone}
               type="tel"
               value={form.phone}
               onChange={set("phone")}
@@ -244,7 +268,7 @@ export function StepDelivery({
 
           <FormField
             icon={IoMailOutline}
-            label="Email"
+            label={locale === "vi" ? "Địa chỉ Email" : "Email Address"}
             type="email"
             value={form.email}
             onChange={set("email")}
@@ -254,7 +278,7 @@ export function StepDelivery({
 
           <SearchableSelectField
             icon={IoLocationOutline}
-            label={provinces.length === 0 ? "Đang tải..." : "Tỉnh / Thành phố"}
+            label={provinces.length === 0 ? t.checkout.delivery.loading : t.checkout.delivery.city}
             value={form.province}
             onChange={selectProvince}
             options={provinces.map((p) => ({
@@ -269,7 +293,7 @@ export function StepDelivery({
           <div className="grid grid-cols-2 gap-4">
             <SearchableSelectField
               icon={IoLocationOutline}
-              label={loadingD ? "Đang tải..." : "Quận / Huyện"}
+              label={loadingD ? t.checkout.delivery.loading : t.checkout.delivery.district}
               value={form.district}
               onChange={selectDistrict}
               options={districts.map((d) => ({
@@ -281,7 +305,7 @@ export function StepDelivery({
             />
             <SearchableSelectField
               icon={IoLocationOutline}
-              label={loadingC ? "Đang tải..." : "Phường / Xã"}
+              label={loadingC ? t.checkout.delivery.loading : t.checkout.delivery.ward}
               value={form.ward}
               onChange={selectWard}
               options={communes.map((c) => ({
@@ -295,10 +319,10 @@ export function StepDelivery({
 
           <FormField
             icon={IoLocationOutline}
-            label="Địa chỉ cụ thể"
+            label={t.checkout.delivery.address}
             value={form.address}
             onChange={set("address")}
-            placeholder="Số nhà, tên đường..."
+            placeholder={t.checkout.delivery.addressPlaceholder}
             required
             error={fieldErr("address")}
           />
@@ -308,7 +332,7 @@ export function StepDelivery({
               className="block text-xs font-bold mb-1.5"
               style={{ color: "#6B7280" }}
             >
-              Ghi chú cho tài xế
+              {t.checkout.delivery.note}
             </label>
             <div
               className="flex gap-3 rounded-2xl px-4 py-3.5 transition-all duration-300"
@@ -324,7 +348,7 @@ export function StepDelivery({
               <textarea
                 value={form.note}
                 onChange={(e) => set("note")(e.target.value)}
-                placeholder="Ví dụ: Gọi trước khi giao, giao giờ hành chính..."
+                placeholder={t.checkout.delivery.notePlaceholder}
                 rows={2}
                 className="flex-1 text-sm font-semibold bg-transparent outline-none resize-none placeholder:font-normal"
                 style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}

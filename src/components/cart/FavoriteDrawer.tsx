@@ -10,11 +10,11 @@ import {
 } from "react-icons/io5";
 import gsap from "gsap";
 import { useFavorite } from "@/contexts/FavoriteContext";
-
-
+import { useLanguage } from "@/contexts/LanguageContext";
 
 /* Empty wishlist illustration */
 function EmptyState() {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-8 py-16 text-center">
       <div
@@ -27,12 +27,10 @@ function EmptyState() {
           className="text-xl font-black mb-2 text-[#1A1A2E]"
           style={{ fontFamily: "'Nunito', sans-serif" }}
         >
-          Danh sách trống!
+          {t.favorites.title}
         </p>
-        <p className="text-sm text-[#6B7280] leading-relaxed">
-          Bé chưa yêu thích sản phẩm nào cả.
-          <br />
-          Hãy khám phá bộ sưu tập nhé!
+        <p className="text-sm text-[#6B7280] leading-relaxed whitespace-pre-line">
+          {t.favorites.emptyPrompt}
         </p>
       </div>
       <Link
@@ -40,7 +38,7 @@ function EmptyState() {
         className="flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 bg-[#FF6B9D] text-white"
         style={{ fontFamily: "'Nunito', sans-serif" }}
       >
-        Xem sản phẩm
+        {t.favorites.viewProduct}
         <IoArrowForward className="text-base" />
       </Link>
     </div>
@@ -54,6 +52,7 @@ export default function FavoriteDrawer() {
     isOpen,
     closeFavorites,
   } = useFavorite();
+  const { t } = useLanguage();
 
   const drawerRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -127,7 +126,7 @@ export default function FavoriteDrawer() {
         ref={backdropRef}
         className="absolute inset-0 bg-[#0E2A66]/40 backdrop-blur-[4px]"
         onClick={animateClose}
-        aria-label="Đóng danh sách yêu thích"
+        aria-label={t.favorites.closeFavorites}
       />
 
       <div
@@ -152,20 +151,20 @@ export default function FavoriteDrawer() {
             <div className="flex items-center gap-2 mb-0.5">
               <IoHeartOutline className="text-2xl text-[#FF6B9D]" />
               <h2 className="text-xl font-black text-[#1A1A2E]">
-                Yêu thích
+                {t.header.favorites}
               </h2>
             </div>
             <p className="text-xs font-bold text-slate-400">
               {items.length === 0
-                ? "Chưa có sản phẩm nào"
-                : `${items.length} sản phẩm đã thích`}
+                ? t.favorites.noItems
+                : t.favorites.itemsLiked.replace("{count}", String(items.length))}
             </p>
           </div>
 
           <button
             onClick={animateClose}
             className="relative z-10 w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 shrink-0 bg-[#F4F7FF] text-[#1A1A2E]"
-            aria-label="Đóng danh sách yêu thích"
+            aria-label={t.favorites.closeFavorites}
           >
             <IoCloseOutline className="text-xl" />
           </button>
@@ -217,7 +216,7 @@ export default function FavoriteDrawer() {
                         onClick={animateClose}
                         className="text-xs font-black text-[#17409A] hover:underline flex items-center gap-1 group"
                       >
-                        Xem chi tiết
+                        {t.favorites.viewDetails}
                         <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                       </Link>
 
@@ -225,7 +224,7 @@ export default function FavoriteDrawer() {
                         onClick={() => toggleFavorite(item.productId)}
                         className="text-xs font-bold text-[#6B7280] hover:text-[#FF6B9D] transition-colors bg-[#F4F7FF] px-3 py-1.5 rounded-xl hover:bg-[#FFF1F5]"
                       >
-                        Bỏ thích
+                        {t.favorites.removeFavorite}
                       </button>
                     </div>
                   </div>

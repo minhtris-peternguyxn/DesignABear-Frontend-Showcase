@@ -7,6 +7,7 @@ import { type Review } from "@/types/review";
 import { type ProductReview, type ReviewReply } from "@/types";
 import { useOrderApi, useReviewApi } from "@/hooks";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -98,6 +99,7 @@ function ReviewCard({
   review: ReviewView;
   accentColor: string;
 }) {
+  const { t } = useLanguage();
   return (
     <div className="relative bg-white rounded-3xl p-8 shadow-lg h-full flex flex-col">
       {/* Large quote mark — decorative background */}
@@ -123,7 +125,7 @@ function ReviewCard({
         <span className="ml-2 text-xs text-[#9CA3AF]">{review.date}</span>
         {review.verified && (
           <span className="ml-auto text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#4ECDC4]/15 text-[#4ECDC4]">
-            Đã mua
+            {t.productDetail.reviews.verified}
           </span>
         )}
       </div>
@@ -141,7 +143,7 @@ function ReviewCard({
               className="rounded-2xl bg-[#F4F7FF] px-4 py-3 border border-[#E5E7EB]"
             >
               <p className="text-xs font-black text-[#17409A] mb-1">
-                Phản hồi từ nhân viên
+                {t.productDetail.reviews.replyFromStaff}
               </p>
               <p className="text-sm text-[#1A1A2E] leading-relaxed">
                 {reply.content}
@@ -169,7 +171,7 @@ function ReviewCard({
         )}
         <div>
           <p className="font-black text-sm text-[#1A1A2E]">{review.name}</p>
-          <p className="text-xs text-[#9CA3AF]">Khách hàng</p>
+          <p className="text-xs text-[#9CA3AF]">{t.productDetail.reviews.customer}</p>
         </div>
       </div>
     </div>
@@ -188,6 +190,7 @@ function ReviewCarousel({
   reviews: ReviewView[];
   accentColor: string;
 }) {
+  const { t } = useLanguage();
   const [page, setPage] = useState(0);
   const [cardWidth, setCardWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -238,9 +241,9 @@ function ReviewCarousel({
     return (
       <div className="py-16 flex flex-col items-center gap-3 text-center">
         <p className="font-black text-lg text-[#1A1A2E]">
-          Chưa có đánh giá cho mức này
+          {t.productDetail.reviews.noReviewsForStar}
         </p>
-        <p className="text-sm text-[#6B7280]">Hãy thử chọn số sao khác.</p>
+        <p className="text-sm text-[#6B7280]">{t.productDetail.reviews.tryAnotherStar}</p>
       </div>
     );
   }
@@ -283,7 +286,7 @@ function ReviewCarousel({
                 height: 8,
                 backgroundColor: i === page ? accentColor : "#E5E7EB",
               }}
-              aria-label={`Trang ${i + 1}`}
+              aria-label={`${t.products.grid.page} ${i + 1}`}
             />
           ))}
         </div>
@@ -295,7 +298,7 @@ function ReviewCarousel({
             onClick={() => goTo(page - 1)}
             disabled={page === 0}
             className="w-11 h-11 rounded-2xl border-2 border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:border-[#1A1A2E] hover:text-[#1A1A2E] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            aria-label="Trước"
+            aria-label={t.products.grid.prev}
           >
             <IconChevronLeft />
           </button>
@@ -305,7 +308,7 @@ function ReviewCarousel({
             disabled={page >= maxPage}
             className="w-11 h-11 rounded-2xl flex items-center justify-center text-white transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             style={{ backgroundColor: accentColor }}
-            aria-label="Tiếp"
+            aria-label={t.products.grid.next}
           >
             <IconChevronRight />
           </button>
@@ -326,36 +329,28 @@ interface Props {
 }
 
 const STAR_FILTERS = [0, 5, 4, 3, 2, 1] as const;
-const STAR_LABELS: Record<number, string> = {
-  0: "Tất cả",
-  5: "5 ★",
-  4: "4 ★",
-  3: "3 ★",
-  2: "2 ★",
-  1: "1 ★",
-};
 
 interface ReviewView extends Review {
   avatarUrl?: string | null;
   replies: ReviewReply[];
 }
 
-function toShortUserLabel(userId: string): { name: string; avatar: string } {
+function toShortUserLabel(userId: string, customerLabel: string): { name: string; avatar: string } {
   const suffix = userId.slice(-4).toUpperCase();
   return {
-    name: `Khách hàng #${suffix}`,
+    name: `${customerLabel} #${suffix}`,
     avatar: suffix.slice(0, 2),
   };
 }
 
-function mapApiReviewToView(r: ProductReview): ReviewView {
+function mapApiReviewToView(r: ProductReview, customerLabel: string): ReviewView {
   const date = new Date(r.createdAt);
   const formattedDate = `${date.getDate().toString().padStart(2, "0")}/${(
     date.getMonth() + 1
   )
     .toString()
     .padStart(2, "0")}/${date.getFullYear()}`;
-  const userMeta = toShortUserLabel(r.userId);
+  const userMeta = toShortUserLabel(r.userId, customerLabel);
   const displayName = (r.authorName || "").trim() || userMeta.name;
 
   return {
@@ -385,8 +380,17 @@ export default function ProductReviews({
   accentColor,
   reviews = DEFAULT_REVIEWS,
 }: Props) {
+  const { t } = useLanguage();
   const sectionRef = useRef<HTMLDivElement>(null);
   const [filterStar, setFilterStar] = useState<number>(0);
+  const starLabels: Record<number, string> = {
+    0: t.productDetail.reviews.all,
+    5: "5 ★",
+    4: "4 ★",
+    3: "3 ★",
+    2: "2 ★",
+    1: "1 ★",
+  };
   const [apiReviews, setApiReviews] = useState<ProductReview[]>(reviews);
   const [canReview, setCanReview] = useState(false);
   const [averageRating, setAverageRating] = useState<number>(0);
@@ -488,7 +492,7 @@ export default function ProductReviews({
     user?.id,
   ]);
 
-  const rawReviews = apiReviews.map(mapApiReviewToView);
+  const rawReviews = apiReviews.map((r) => mapApiReviewToView(r, t.productDetail.reviews.customer));
 
   const filtered =
     filterStar === 0
@@ -548,15 +552,15 @@ export default function ProductReviews({
               className="text-xs font-black tracking-[0.35em] uppercase mb-3 relative z-10"
               style={{ color: accentColor }}
             >
-              Đánh giá thực tế
+              {t.productDetail.reviews.title}
             </p>
             <h2
               className="text-4xl md:text-5xl font-black text-[#1A1A2E] leading-tight relative z-10"
               style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Phụ huynh nói
+              {t.productDetail.reviews.subtitle}
               <br />
-              <span style={{ color: accentColor }}>gì về chúng tôi?</span>
+              <span style={{ color: accentColor }}>{t.productDetail.reviews.titleAccent}</span>
             </h2>
           </div>
 
@@ -574,7 +578,7 @@ export default function ProductReviews({
                   <StarFilled key={i} size={14} />
                 ))}
               </div>
-              <p className="text-xs text-[#6B7280] mt-1">Trung bình</p>
+              <p className="text-xs text-[#6B7280] mt-1">{t.productDetail.reviews.average}</p>
             </div>
             <div className="w-px h-16 bg-[#E5E7EB]" />
             <div className="text-center">
@@ -583,14 +587,14 @@ export default function ProductReviews({
                   ? (numReviews / 1000).toFixed(1) + "k"
                   : numReviews}
               </p>
-              <p className="text-xs text-[#6B7280] mt-2">Đánh giá</p>
+              <p className="text-xs text-[#6B7280] mt-2">{t.productDetail.reviews.reviewsCount}</p>
             </div>
             <div className="w-px h-16 bg-[#E5E7EB]" />
             <div className="text-center">
               <p className="text-5xl font-black text-[#1A1A2E] leading-none">
                 {satisfaction}%
               </p>
-              <p className="text-xs text-[#6B7280] mt-2">Hài lòng</p>
+              <p className="text-xs text-[#6B7280] mt-2">{t.productDetail.reviews.satisfiedPercent}</p>
             </div>
           </div>
         </div>
@@ -622,7 +626,7 @@ export default function ProductReviews({
                     ))}
                   </span>
                 )}
-                {STAR_LABELS[star]}
+                {starLabels[star]}
                 <span
                   className="text-xs px-1.5 py-0.5 rounded-full font-black"
                   style={{
@@ -708,10 +712,10 @@ export default function ProductReviews({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
             <p className="text-[#1A1A2E] font-black text-lg md:text-xl mb-2" style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}>
-              Hãy mua hàng để được đánh giá sản phẩm này
+              {t.productDetail.reviews.buyToReviewTitle}
             </p>
             <p className="text-[#6B7280] text-sm max-w-md px-4 leading-relaxed">
-              Chỉ những khách hàng đã mua và trải nghiệm sản phẩm mới có thể để lại đánh giá nhằm đảm bảo tính khách quan nhất.
+              {t.productDetail.reviews.buyToReviewDesc}
             </p>
           </div>
         ) : null}
@@ -732,6 +736,7 @@ function StarSelector({
   onChange: (v: number) => void;
   accentColor: string;
 }) {
+  const { locale, t } = useLanguage();
   const [hovered, setHovered] = useState(0);
   return (
     <div className="flex items-center gap-1">
@@ -745,7 +750,7 @@ function StarSelector({
             onMouseEnter={() => setHovered(i + 1)}
             onMouseLeave={() => setHovered(0)}
             className="transition-transform duration-150 hover:scale-110 cursor-pointer"
-            aria-label={`${i + 1} sao`}
+            aria-label={`${i + 1} ${locale === "vi" ? "sao" : "stars"}`}
           >
             <svg
               width="28"
@@ -761,7 +766,7 @@ function StarSelector({
       })}
       {value > 0 && (
         <span className="ml-2 text-sm font-bold" style={{ color: accentColor }}>
-          {["Rất tệ", "Tệ", "Bình thường", "Tốt", "Xuất sắc"][value - 1]}
+          {t.productDetail.reviews.ratingLevels[value - 1]}
         </span>
       )}
     </div>
@@ -790,6 +795,7 @@ function WriteReviewForm({
   ) => Promise<void>;
   onDelete: (reviewId: string) => Promise<void>;
 }) {
+  const { t } = useLanguage();
   const [title, setTitle] = useState("");
   const [rating, setRating] = useState(0);
   const [text, setText] = useState("");
@@ -839,7 +845,7 @@ function WriteReviewForm({
           className="text-xs font-black tracking-[0.3em] uppercase px-1"
           style={{ color: accentColor }}
         >
-          Viết đánh giá của bạn
+          {t.productDetail.reviews.writeReview}
         </p>
         <div className="flex-1 h-px bg-[#E5E7EB]" />
       </div>
@@ -863,11 +869,10 @@ function WriteReviewForm({
             />
           </svg>
           <p className="font-black text-xl text-[#1A1A2E]">
-            Cảm ơn bạn đã đánh giá!
+            {t.productDetail.reviews.thankYou}
           </p>
           <p className="text-sm text-[#6B7280]">
-            Mỗi người dùng chỉ có 1 đánh giá cho sản phẩm này. Bạn có thể quay
-            lại để chỉnh sửa đánh giá vừa gửi.
+            {t.productDetail.reviews.oneReviewLimit}
           </p>
           <button
             type="button"
@@ -875,7 +880,7 @@ function WriteReviewForm({
             className="mt-2 text-sm font-bold underline underline-offset-2 cursor-pointer"
             style={{ color: accentColor }}
           >
-            Quay lại chỉnh sửa đánh giá
+            {t.productDetail.reviews.editReview}
           </button>
         </div>
       ) : (
@@ -890,14 +895,14 @@ function WriteReviewForm({
                 htmlFor="review-title"
                 className="text-xs font-black tracking-widest uppercase text-[#1A1A2E]"
               >
-                Tiêu đề đánh giá
+                {t.productDetail.reviews.reviewTitle}
               </label>
               <input
                 id="review-title"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ví dụ: Sản phẩm rất tốt"
+                placeholder={t.productDetail.reviews.reviewPlaceholder}
                 maxLength={60}
                 required
                 className="w-full px-5 py-3.5 rounded-2xl border-2 border-[#E5E7EB] bg-white text-[#1A1A2E] text-sm font-medium placeholder:text-[#9CA3AF] outline-none transition-all duration-200 focus:border-current"
@@ -914,7 +919,7 @@ function WriteReviewForm({
             {/* Star rating */}
             <div className="flex flex-col gap-2">
               <p className="text-xs font-black tracking-widest uppercase text-[#1A1A2E]">
-                Đánh giá
+                {t.productDetail.reviews.rating}
               </p>
               <div className="flex items-center h-12.5">
                 <StarSelector
@@ -931,13 +936,13 @@ function WriteReviewForm({
                 htmlFor="review-text"
                 className="text-xs font-black tracking-widest uppercase text-[#1A1A2E]"
               >
-                Nhận xét
+                {t.productDetail.reviews.comment}
               </label>
               <textarea
                 id="review-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."
+                placeholder={t.productDetail.reviews.commentPlaceholder}
                 rows={4}
                 maxLength={500}
                 required
@@ -956,7 +961,7 @@ function WriteReviewForm({
           {/* Submit */}
           <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
             <p className="text-xs text-[#9CA3AF] leading-relaxed max-w-xs">
-              Đánh giá của bạn sẽ được kiểm duyệt trước khi hiển thị công khai.
+              {t.productDetail.reviews.moderationAlert}
             </p>
             <div className="flex items-center gap-3 ml-auto">
               <button
@@ -967,7 +972,7 @@ function WriteReviewForm({
                 className="px-8 py-3.5 rounded-2xl text-white font-black text-sm tracking-wide shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 cursor-pointer"
                 style={{ backgroundColor: accentColor }}
               >
-                {existingReview ? "Cập nhật đánh giá" : "Gửi đánh giá"}
+                {existingReview ? t.productDetail.reviews.updateReview : t.productDetail.reviews.submitReview}
               </button>
               {existingReview && (
                 <button
@@ -976,7 +981,7 @@ function WriteReviewForm({
                   disabled={submitting}
                   className="px-6 py-3.5 rounded-2xl border-2 border-[#FCA5A5] text-[#DC2626] font-black text-sm transition-all duration-200 hover:bg-[#FEF2F2] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  Xóa đánh giá
+                  {t.productDetail.reviews.deleteReview}
                 </button>
               )}
             </div>

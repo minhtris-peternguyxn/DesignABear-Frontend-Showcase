@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { IoSparklesOutline, IoCheckmark, IoLockClosed, IoCloseCircle } from "react-icons/io5";
 import { PAYMENT_OPTIONS } from "./checkout.atoms";
 
@@ -37,6 +37,7 @@ export function StepPayment({
   shippingFee: number;
   isLoading?: boolean;
 }) {
+  const { locale, t } = useLanguage();
   return (
     <div className="space-y-5 relative">
       {/* Watermark */}
@@ -68,12 +69,12 @@ export function StepPayment({
             <div>
               <h3
                 className="text-lg font-black"
-                style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
+                style={{ color: "#1A1A2E", fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
               >
-                Mã khuyến mãi
+                {t.checkout.payment.coupon}
               </h3>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                Có thể áp dụng nhiều mã cùng lúc
+                {t.checkout.payment.couponDesc}
               </p>
             </div>
           </div>
@@ -85,7 +86,7 @@ export function StepPayment({
               value={couponInput}
               onChange={(e) => onCouponInputChange(e.target.value.toUpperCase())}
               disabled={isLoading}
-              placeholder="VD: SUMMER2024"
+              placeholder={t.checkout.payment.couponPlaceholder}
               className="flex-1 px-4 py-3 rounded-2xl text-sm outline-none transition-all disabled:opacity-50"
               style={{
                 border: "1.5px solid #E5E7EB",
@@ -106,7 +107,7 @@ export function StepPayment({
                 color: "white",
               }}
             >
-              {isLoading ? "..." : "Thêm"}
+              {isLoading ? "..." : t.checkout.payment.apply}
             </button>
           </div>
 
@@ -128,8 +129,8 @@ export function StepPayment({
                     </span>
                     <span className="text-xs" style={{ color: "#6B7280" }}>
                       {c.discountType === "SHIPPING" || c.discountType === "SHIPPING_FIXED"
-                        ? `Giảm ship: -${c.shippingDiscount.toLocaleString("vi-VN")}đ`
-                        : `Giảm giá: -${c.productDiscount.toLocaleString("vi-VN")}đ`}
+                        ? t.checkout.payment.couponShipping.replace("{amount}", c.shippingDiscount.toLocaleString(locale === "vi" ? "vi-VN" : "en-US"))
+                        : t.checkout.payment.couponProduct.replace("{amount}", c.productDiscount.toLocaleString(locale === "vi" ? "vi-VN" : "en-US"))}
                     </span>
                   </div>
                   <button
@@ -151,10 +152,10 @@ export function StepPayment({
                 }}
               >
                 <span className="text-xs font-bold" style={{ color: "#4ECDC4" }}>
-                  Tổng giảm ({appliedCoupons.length} mã)
+                  {t.checkout.payment.couponTotal.replace("{count}", String(appliedCoupons.length))}
                 </span>
                 <span className="text-sm font-black" style={{ color: "#4ECDC4" }}>
-                  -{totalDiscount.toLocaleString("vi-VN")} đ
+                  -{totalDiscount.toLocaleString(locale === "vi" ? "vi-VN" : "en-US")}{locale === "vi" ? " đ" : " VND"}
                 </span>
               </div>
             </div>
@@ -176,12 +177,12 @@ export function StepPayment({
             <div>
               <h2
                 className="text-lg font-black"
-                style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
+                style={{ color: "#1A1A2E", fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
               >
-                Thanh toán như thế nào?
+                {t.checkout.payment.methodTitle}
               </h2>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                Hiện tại chỉ hỗ trợ Chuyển khoản
+                {t.checkout.payment.methodDesc}
               </p>
             </div>
           </div>
@@ -190,6 +191,22 @@ export function StepPayment({
             {PAYMENT_OPTIONS.map((opt) => {
               const isLocked = opt.id !== "bank";
               const selected = method === opt.id;
+
+              const label = opt.id === "cod"
+                ? t.checkout.payment.codTitle
+                : opt.id === "bank"
+                  ? t.checkout.payment.bankTitle
+                  : opt.id === "momo"
+                    ? (locale === "vi" ? "Ví MoMo" : "MoMo Wallet")
+                    : (locale === "vi" ? "VNPay QR" : "VNPay QR");
+
+              const brief = opt.id === "cod"
+                ? t.checkout.payment.codDesc
+                : opt.id === "bank"
+                  ? t.checkout.payment.bankDesc
+                  : locale === "vi"
+                    ? "Đang phát triển"
+                    : "Under development";
 
               return (
                 <button
@@ -254,7 +271,7 @@ export function StepPayment({
                       fontFamily: "'Nunito', sans-serif",
                     }}
                   >
-                    {opt.label}
+                    {label}
                   </p>
                   <p
                     className="text-xs leading-snug"
@@ -262,7 +279,7 @@ export function StepPayment({
                       color: isLocked ? "#B4B8BE" : "#9CA3AF",
                     }}
                   >
-                    {isLocked ? "Đang phát triển" : opt.brief}
+                    {isLocked ? (locale === "vi" ? "Đang phát triển" : "Developing") : brief}
                   </p>
                 </button>
               );
@@ -280,14 +297,14 @@ export function StepPayment({
             }}
           >
             <p className="text-xs font-bold mb-3" style={{ color: "#17409A" }}>
-              Thông tin chuyển khoản
+              {t.checkout.payment.bankInfoTitle}
             </p>
             <div className="space-y-1.5">
               {[
-                ["Ngân hàng", "Ngan Hang Quan Doi - MB"],
-                ["Số tài khoản", "0938xxxxxx"],
-                ["Chủ tài khoản", "NGUYEN MINH TRI"],
-                ["Nội dung", "DAB — [Mã đơn hàng]"],
+                [t.checkout.payment.bankName, "Ngan Hang Quan Doi - MB"],
+                [t.checkout.payment.bankAccount, "0938xxxxxx"],
+                [t.checkout.payment.bankHolder, "NGUYEN MINH TRI"],
+                [t.checkout.payment.bankNote, t.checkout.payment.bankNoteValue],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between">
                   <span className="text-xs" style={{ color: "#9CA3AF" }}>

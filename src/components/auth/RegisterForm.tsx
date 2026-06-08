@@ -18,10 +18,7 @@ import type { GoogleCompleteProfileRequest, RegisterRequest } from "@/types";
 import CustomDropdown from "@/components/shared/CustomDropdown";
 import { z } from "zod";
 import { mediaService } from "@/services/media.service";
-
-interface RegisterFormProps {
-  onSwitchLogin: () => void;
-}
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const registerSchema = z.object({
   email: z.string().trim().email("Email không hợp lệ"),
@@ -89,15 +86,15 @@ type GoogleProfilePayload = Omit<
 >;
 type GoogleProfileErrors = Partial<Record<keyof GoogleProfilePayload, string>>;
 
-const GENDER_OPTIONS = [
-  { label: "Nam", value: "M" },
-  { label: "Nữ", value: "F" },
-];
-
 const MATCHED_INPUT_CLASS =
   "w-full pl-5 pr-4 py-4 rounded-2xl border border-[#E5E7EB] bg-white/50 text-[#1A1A2E] text-sm focus:outline-none focus:border-[#17409A] focus:bg-white/80 transition-all duration-200";
 
+interface RegisterFormProps {
+  onSwitchLogin: () => void;
+}
+
 export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
+  const { locale, t } = useLanguage();
   const router = useRouter();
   const {
     signup,
@@ -108,7 +105,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     completeGoogleProfile,
     clearPendingGoogleProfile,
   } = useAuth();
-  const { success, error: toastError, info } = useToast();
+  const { success, error: toastError } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -118,6 +115,44 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
   const [googleProfileErrors, setGoogleProfileErrors] =
     useState<GoogleProfileErrors>({});
 
+  const genderOptions = useMemo(() => [
+    { label: locale === "vi" ? "Nam" : "Male", value: "M" },
+    { label: locale === "vi" ? "Nữ" : "Female", value: "F" },
+  ], [locale]);
+
+  const translateRegisterError = (key: string, message: string): string => {
+    if (locale !== "en") return message;
+    switch (key) {
+      case "email":
+        if (message.includes("không hợp lệ") || message.includes("invalid")) return "Invalid email address";
+        return message;
+      case "password":
+        if (message.includes("8 ký tự")) return "Password must be at least 8 characters";
+        if (message.includes("chữ in hoa")) return "Password must contain at least 1 uppercase letter";
+        if (message.includes("chữ thường")) return "Password must contain at least 1 lowercase letter";
+        if (message.includes("chữ số")) return "Password must contain at least 1 digit";
+        if (message.includes("ký tự đặc biệt")) return "Password must contain at least 1 special character";
+        return message;
+      case "fullName":
+        if (message.includes("2 ký tự")) return "Full name must be at least 2 characters";
+        return message;
+      case "phoneNumber":
+        if (message.includes("10 chữ số")) return "Phone number must be exactly 10 digits";
+        return message;
+      case "avatarUrl":
+        if (message.includes("hợp lệ") || message.includes("http")) return "Avatar must be a valid URL starting with http:// or https://";
+        return message;
+      case "dateOfBirth":
+        if (message.includes("chọn ngày sinh")) return "Please select your date of birth";
+        if (message.includes("không hợp lệ")) return "Invalid date of birth";
+        return message;
+      case "gender":
+        if (message.includes("không hợp lệ")) return "Invalid gender";
+        return message;
+      default:
+        return message;
+    }
+  };
 
   // Registration form state
   const [formData, setFormData] = useState<RegisterRequest>({
@@ -170,18 +205,14 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       setError("");
     };
 
-
   const otpRefs = useRef<(HTMLInputElement | null)[]>(new Array(6).fill(null));
 
   const handleOtpBoxChange = (index: number, value: string) => {
-    // Only allow numbers
     if (value && !/^\d+$/.test(value)) return;
 
     const newOtpArr = verificationData.otp.split("");
-    // Ensure array has 6 elements
     while (newOtpArr.length < 6) newOtpArr.push("");
 
-    // Take only the last char if multiple are pasted/typed
     const char = value.slice(-1);
     newOtpArr[index] = char;
     
@@ -189,7 +220,6 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     setVerificationData(prev => ({ ...prev, otp: newOtp }));
     setError("");
 
-    // Auto focus next
     if (char && index < 5) {
       otpRefs.current[index + 1]?.focus();
     }
@@ -209,7 +239,6 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     setVerificationData(prev => ({ ...prev, otp: pasted }));
     setError("");
     
-    // Focus last box or the next empty box
     const nextIdx = Math.min(pasted.length, 5);
     otpRefs.current[nextIdx]?.focus();
   };
@@ -249,21 +278,20 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      const message = "Vui lòng chọn file ảnh hợp lệ";
+      const message = locale === "vi" ? "Vui lòng chọn file ảnh hợp lệ" : "Please select a valid image file";
       setError(message);
       toastError(message);
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      const message = "Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5MB";
+      const message = locale === "vi" ? "Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5MB" : "Image is too large. Please select an image smaller than 5MB";
       setError(message);
       toastError(message);
       return;
     }
 
     try {
-      // Use object URL only for local preview; keep payload short for BE limits.
       if (avatarPreview.startsWith("blob:")) {
         URL.revokeObjectURL(avatarPreview);
       }
@@ -276,7 +304,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       const uploadRes = await mediaService.uploadMedia(file, "avatars");
 
       if (uploadRes.isFailure || !uploadRes.value?.publicUrl) {
-        throw new Error(uploadRes.error?.description || "Upload ảnh thất bại");
+        throw new Error(uploadRes.error?.description || (locale === "vi" ? "Upload ảnh thất bại" : "Upload image failed"));
       }
 
       const uploadedUrl = uploadRes.value.publicUrl;
@@ -289,9 +317,9 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
         ...prev,
         avatarUrl: undefined,
       }));
-      success("Đã tải ảnh lên và tự điền Avatar URL");
+      success(locale === "vi" ? "Đã tải ảnh lên và tự điền Avatar URL" : "Uploaded image and auto-filled Avatar URL");
     } catch (err: any) {
-      const message = err.message || "Không thể tải ảnh từ máy của bạn";
+      const message = err.message || (locale === "vi" ? "Không thể tải ảnh từ máy của bạn" : "Cannot upload image from your computer");
       setError(message);
       toastError(message);
     } finally {
@@ -331,12 +359,12 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     const score = checks.filter(Boolean).length;
 
     if (!password)
-      return { score: 0, label: "Chưa nhập", color: "bg-gray-300" };
-    if (score <= 2) return { score, label: "Yếu", color: "bg-red-500" };
+      return { score: 0, label: locale === "vi" ? "Chưa nhập" : "Not entered", color: "bg-gray-300" };
+    if (score <= 2) return { score, label: locale === "vi" ? "Yếu" : "Weak", color: "bg-red-500" };
     if (score <= 4)
-      return { score, label: "Trung bình", color: "bg-amber-500" };
-    return { score, label: "Mạnh", color: "bg-emerald-500" };
-  }, [formData.password]);
+      return { score, label: locale === "vi" ? "Trung bình" : "Medium", color: "bg-amber-500" };
+    return { score, label: locale === "vi" ? "Mạnh" : "Strong", color: "bg-emerald-500" };
+  }, [formData.password, locale]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -354,22 +382,22 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           (key) => {
             const firstError = flattened[key]?.[0];
             if (firstError) {
-              nextErrors[key] = firstError;
+              nextErrors[key] = translateRegisterError(key, firstError);
             }
           },
         );
 
         setFieldErrors(nextErrors);
-        const message = "Vui lòng kiểm tra lại thông tin đăng ký";
+        const message = locale === "vi" ? "Vui lòng kiểm tra lại thông tin đăng ký" : "Please check your registration details";
         setError(message);
         toastError(message);
         return;
       }
 
       await signup(validated.data);
-      success("Đăng ký thành công, vui lòng kiểm tra email để lấy OTP");
+      success(locale === "vi" ? "Đăng ký thành công, vui lòng kiểm tra email để lấy OTP" : "Registration successful, please check your email for the OTP");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Đăng ký thất bại";
+      const message = err instanceof Error ? err.message : (locale === "vi" ? "Đăng ký thất bại" : "Registration failed");
       setError(message);
       toastError(message);
     } finally {
@@ -384,7 +412,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
     try {
       if (!verificationData.otp) {
-        const message = "Vui lòng nhập mã OTP";
+        const message = locale === "vi" ? "Vui lòng nhập mã OTP" : "Please enter the OTP code";
         setError(message);
         toastError(message);
         setIsLoading(false);
@@ -392,7 +420,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       }
 
       if (!pendingVerification?.email) {
-        const message = "Email không hợp lệ";
+        const message = locale === "vi" ? "Email không hợp lệ" : "Invalid email";
         setError(message);
         toastError(message);
         setIsLoading(false);
@@ -400,9 +428,8 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       }
 
       await verifyEmail(pendingVerification.email, verificationData.otp);
-      success("Xác nhận email thành công");
+      success(locale === "vi" ? "Xác nhận email thành công" : "Email verification successful");
 
-      // verifyEmail already stores token + user in localStorage; redirect by role like login flow
       const stored = localStorage.getItem("dab_user");
       const user = stored ? JSON.parse(stored) : null;
       if (user?.role === "admin") {
@@ -418,7 +445,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       }
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Xác nhận email thất bại";
+        err instanceof Error ? err.message : (locale === "vi" ? "Xác nhận email thất bại" : "Email verification failed");
       setError(message);
       toastError(message);
     } finally {
@@ -443,20 +470,20 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           (key) => {
             const firstError = flattened[key]?.[0];
             if (firstError) {
-              nextErrors[key] = firstError;
+              nextErrors[key] = translateRegisterError(key, firstError);
             }
           },
         );
 
         setGoogleProfileErrors(nextErrors);
-        const message = "Vui lòng kiểm tra lại hồ sơ Google";
+        const message = locale === "vi" ? "Vui lòng kiểm tra lại hồ sơ Google" : "Please check your Google profile details";
         setError(message);
         toastError(message);
         return;
       }
 
       await completeGoogleProfile(validated.data);
-      success("Hoàn tất hồ sơ Google thành công");
+      success(locale === "vi" ? "Hoàn tất hồ sơ Google thành công" : "Completed Google profile successfully");
 
       const stored = localStorage.getItem("dab_user");
       const user = stored ? JSON.parse(stored) : null;
@@ -473,7 +500,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       }
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Hoàn tất hồ sơ Google thất bại";
+        err instanceof Error ? err.message : (locale === "vi" ? "Hoàn tất hồ sơ Google thất bại" : "Failed to complete Google profile");
       setError(message);
       toastError(message);
     } finally {
@@ -486,12 +513,16 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       <>
         <div className="field-item text-center mb-6">
           <h1 className="font-black text-[#1A1A2E] text-3xl leading-tight mb-2">
-            Hoàn tất hồ sơ Google
+            {locale === "vi" ? "Hoàn tất hồ sơ Google" : "Complete Google Profile"}
           </h1>
           <p className="text-[#6B7280] text-sm">
             {pendingGoogleProfile.email
-              ? `Tài khoản ${pendingGoogleProfile.email} cần bổ sung thông tin trước khi đăng nhập.`
-              : "Bạn cần bổ sung thông tin trước khi đăng nhập bằng Google."}
+              ? (locale === "vi" 
+                  ? `Tài khoản ${pendingGoogleProfile.email} cần bổ sung thông tin trước khi đăng nhập.` 
+                  : `Account ${pendingGoogleProfile.email} needs additional details before logging in.`)
+              : (locale === "vi"
+                  ? "Bạn cần bổ sung thông tin trước khi đăng nhập bằng Google."
+                  : "You need to complete your profile before logging in with Google.")}
           </p>
         </div>
 
@@ -503,7 +534,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           <div>
             <InputField
               type="text"
-              placeholder="Họ và tên"
+              placeholder={t.auth.fullNamePlaceholder}
               name="fullName"
               value={googleProfileData.fullName}
               onChange={setGoogleProfileField("fullName")}
@@ -519,7 +550,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           <div>
             <InputField
               type="text"
-              placeholder="Số điện thoại"
+              placeholder={locale === "vi" ? "Số điện thoại" : "Phone number"}
               name="phoneNumber"
               value={googleProfileData.phoneNumber}
               onChange={setGoogleProfileField("phoneNumber")}
@@ -535,7 +566,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           <div className="md:col-span-2">
             <InputField
               type="password"
-              placeholder="Tạo mật khẩu"
+              placeholder={locale === "vi" ? "Tạo mật khẩu" : "Create password"}
               name="password"
               value={googleProfileData.password}
               onChange={setGoogleProfileField("password")}
@@ -550,7 +581,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
           <div>
             <label className="block text-xs font-medium text-[#6B7280] mb-1">
-              Ngày sinh
+              {locale === "vi" ? "Ngày sinh" : "Date of birth"}
             </label>
             <input
               type="date"
@@ -572,16 +603,16 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
           <div>
             <label className="block text-xs font-medium text-[#6B7280] mb-1">
-              Giới tính
+              {locale === "vi" ? "Giới tính" : "Gender"}
             </label>
             <CustomDropdown
-              options={GENDER_OPTIONS}
+              options={genderOptions}
               value={googleProfileData.gender}
               onChange={setGoogleProfileField("gender")}
               buttonClassName={`${MATCHED_INPUT_CLASS} flex items-center justify-between`}
               chevronClassName="text-[#9CA3AF] text-xl transition-transform"
               menuClassName="absolute z-30 mt-2 w-full rounded-2xl border border-[#E5E7EB] bg-white shadow-xl py-1"
-              ariaLabel="Giới tính"
+              ariaLabel={locale === "vi" ? "Giới tính" : "Gender"}
             />
             {googleProfileErrors.gender && (
               <p className="mt-1 text-xs text-red-500">
@@ -599,7 +630,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
             disabled={isLoading}
             className="w-full bg-[#17409A] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0E2A66] transition-colors duration-200 shadow-lg shadow-[#17409A]/20 text-base disabled:opacity-50 disabled:cursor-not-allowed md:col-span-2"
           >
-            {isLoading ? "Đang hoàn tất..." : "Hoàn tất và đăng nhập"}
+            {isLoading ? (locale === "vi" ? "Đang hoàn tất..." : "Completing...") : (locale === "vi" ? "Hoàn tất và đăng nhập" : "Complete & Log In")}
           </button>
         </form>
 
@@ -612,7 +643,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
             }}
             className="text-[#17409A] font-bold hover:underline underline-offset-2"
           >
-            Quay lại đăng nhập
+            {t.auth.backToLogin}
           </button>
         </div>
       </>
@@ -625,10 +656,10 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
       <>
         <div className="field-item text-center mb-8">
           <h1 className="font-black text-[#1A1A2E] text-3xl leading-tight mb-2">
-            Xác nhận email
+            {locale === "vi" ? "Xác nhận email" : "Verify Email"}
           </h1>
           <p className="text-[#6B7280] text-sm">
-            Chúng tôi đã gửi mã OTP đến <br />
+            {locale === "vi" ? "Chúng tôi đã gửi mã OTP đến" : "We have sent the OTP code to"} <br />
             <span className="font-semibold text-[#1A1A2E]">
               {pendingVerification.email}
             </span>
@@ -661,7 +692,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
             disabled={isLoading}
             className="w-full bg-[#17409A] text-white font-bold py-4 rounded-2xl hover:bg-[#0E2A66] transition-colors duration-200 shadow-lg shadow-[#17409A]/20 text-base disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Đang xác nhận..." : "Xác nhận"}
+            {isLoading ? (locale === "vi" ? "Đang xác nhận..." : "Verifying...") : (locale === "vi" ? "Xác nhận" : "Verify")}
           </button>
         </form>
 
@@ -675,7 +706,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
             }}
             className="text-[#17409A] font-bold hover:underline underline-offset-2"
           >
-            Quay lại đăng ký
+            {locale === "vi" ? "Quay lại đăng ký" : "Back to Register"}
           </button>
         </div>
       </>
@@ -687,10 +718,10 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
     <>
       <div className="field-item text-center mb-4">
         <h1 className="font-black text-[#1A1A2E] text-2xl md:text-3xl leading-tight mb-1">
-          Tham gia cùng chúng tôi
+          {t.auth.registerTitle}
         </h1>
         <p className="text-[#6B7280] text-sm md:text-[15px]">
-          Chỉ vài bước để bắt đầu thiết kế và học tập
+          {t.auth.registerSubtitle}
         </p>
       </div>
 
@@ -702,7 +733,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
         <div>
           <InputField
             type="email"
-            placeholder="Email"
+            placeholder={t.auth.emailPlaceholder}
             name="email"
             value={formData.email}
             onChange={handleInputFieldChange("email")}
@@ -716,7 +747,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
         <div>
           <InputField
             type="password"
-            placeholder="Mật khẩu"
+            placeholder={t.auth.passwordPlaceholder}
             name="password"
             value={formData.password}
             onChange={handleInputFieldChange("password")}
@@ -730,7 +761,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
               />
             </div>
             <p className="mt-1 text-xs text-[#6B7280]">
-              Độ mạnh mật khẩu:{" "}
+              {locale === "vi" ? "Độ mạnh mật khẩu: " : "Password strength: "}{" "}
               <span className="font-semibold">{passwordStrength.label}</span>
             </p>
           </div>
@@ -742,7 +773,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
         <div>
           <InputField
             type="text"
-            placeholder="Họ và tên"
+            placeholder={t.auth.fullNamePlaceholder}
             name="fullName"
             value={formData.fullName}
             onChange={handleInputFieldChange("fullName")}
@@ -756,7 +787,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
         <div>
           <InputField
             type="text"
-            placeholder="Số điện thoại"
+            placeholder={locale === "vi" ? "Số điện thoại" : "Phone number"}
             name="phoneNumber"
             value={formData.phoneNumber}
             onChange={handleInputFieldChange("phoneNumber")}
@@ -773,8 +804,8 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           <label className="w-full px-4 py-4 rounded-2xl border border-[#E5E7EB] bg-white/50 text-[#1A1A2E] text-sm focus-within:border-[#17409A] cursor-pointer flex items-center justify-between gap-3 transition-colors">
             <span className="truncate">
               {avatarPreview
-                ? `Đã chọn: ${avatarFileName || "Ảnh đại diện"}`
-                : "Chọn ảnh từ máy"}
+                ? `${locale === "vi" ? "Đã chọn: " : "Selected: "}${avatarFileName || (locale === "vi" ? "Ảnh đại diện" : "Avatar")}`
+                : (locale === "vi" ? "Chọn ảnh từ máy" : "Choose image from computer")}
             </span>
             <IoImageOutline className="text-xl text-[#9CA3AF]" />
             <input
@@ -787,7 +818,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
           {isUploadingAvatar && (
             <p className="mt-2 text-xs text-[#17409A] font-semibold">
-              Đang upload ảnh để lấy URL...
+              {locale === "vi" ? "Đang upload ảnh để lấy URL..." : "Uploading image to get URL..."}
             </p>
           )}
 
@@ -813,7 +844,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
                 }}
                 className="text-sm text-[#17409A] font-semibold hover:underline"
               >
-                Xóa anh
+                {locale === "vi" ? "Xóa ảnh" : "Delete image"}
               </button>
             </div>
           )}
@@ -836,7 +867,7 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
         <div>
           <label className="block text-xs font-medium text-[#6B7280] mb-1">
-            Ngày sinh
+            {locale === "vi" ? "Ngày sinh" : "Date of birth"}
           </label>
           <input
             type="date"
@@ -855,16 +886,16 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
 
         <div>
           <label className="block text-xs font-medium text-[#6B7280] mb-1">
-            Giới tính
+            {locale === "vi" ? "Giới tính" : "Gender"}
           </label>
           <CustomDropdown
-            options={GENDER_OPTIONS}
+            options={genderOptions}
             value={formData.gender}
             onChange={handleInputFieldChange("gender")}
             buttonClassName={`${MATCHED_INPUT_CLASS} flex items-center justify-between`}
             chevronClassName="text-[#9CA3AF] text-xl transition-transform"
             menuClassName="absolute z-30 mt-2 w-full rounded-2xl border border-[#E5E7EB] bg-white shadow-xl py-1"
-            ariaLabel="Giới tính"
+            ariaLabel={locale === "vi" ? "Giới tính" : "Gender"}
           />
           {fieldErrors.gender && (
             <p className="mt-1 text-xs text-red-500">{fieldErrors.gender}</p>
@@ -880,22 +911,22 @@ export default function RegisterForm({ onSwitchLogin }: RegisterFormProps) {
           disabled={isLoading || isUploadingAvatar}
           className="w-full bg-[#17409A] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0E2A66] transition-colors duration-200 shadow-lg shadow-[#17409A]/20 text-base disabled:opacity-50 disabled:cursor-not-allowed md:col-span-2"
         >
-          {isLoading ? "Đang đăng ký..." : "Đăng ký ngay"}
+          {isLoading ? t.auth.registering : t.auth.registerBtn}
         </button>
       </form>
 
       <div className="field-item mt-4">
-        <SocialButtons label="đăng ký" />
+        <SocialButtons label={locale === "vi" ? "đăng ký" : "register"} />
       </div>
 
       <div className="field-item text-center text-sm text-[#6B7280] mt-4">
-        Đã có tài khoản?{" "}
+        {t.auth.hasAccount}{" "}
         <button
           type="button"
           onClick={onSwitchLogin}
           className="text-[#17409A] font-bold hover:underline underline-offset-2"
         >
-          Đăng nhập ngay
+          {t.auth.login}
         </button>
       </div>
     </>

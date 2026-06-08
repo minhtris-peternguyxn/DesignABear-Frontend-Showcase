@@ -7,6 +7,7 @@ import SocialButtons from "./SocialButtons";
 import { IoMailOutline, IoLockClosedOutline } from "react-icons/io5";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LoginFormProps {
   onSwitchRegister: () => void;
@@ -19,6 +20,7 @@ export default function LoginForm({
 }: LoginFormProps) {
   const { login } = useAuth();
   const { success, error: toastError } = useToast();
+  const { locale, t } = useLanguage();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,7 +38,7 @@ export default function LoginForm({
       }
 
       await login(email, password);
-      success("Đăng nhập thành công");
+      success(t.auth.loginSuccess);
       
       // AuthContext now stores role — read from localStorage to redirect
       const stored = localStorage.getItem("dab_user");
@@ -62,7 +64,7 @@ export default function LoginForm({
         router.push("/");
       }
     } catch (err: unknown) {
-      toastError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      toastError(err instanceof Error ? err.message : t.auth.loginFail);
     } finally {
       setLoading(false);
     }
@@ -72,18 +74,17 @@ export default function LoginForm({
     <form onSubmit={handleSubmit} method="POST">
       <div className="field-item text-center mb-8">
         <h1 className="font-black text-[#1A1A2E] text-3xl leading-tight mb-2">
-          Chào mừng bạn trở lại
+          {t.auth.welcomeBack}
         </h1>
         <p className="text-[#6B7280] text-sm">
-          Đăng nhập để tiếp tục thiết kế và học tập cùng{" "}
-          <span className="text-[#17409A] font-semibold">DesignABear</span>
+          {t.auth.loginSubtitle.replace("{brand}", "DesignABear")}
         </p>
       </div>
 
       <div className="field-item space-y-4">
         <InputField
           type="email"
-          placeholder="Email"
+          placeholder={t.auth.emailPlaceholder}
           rightIcon={<IoMailOutline />}
           name="email"
           value={email}
@@ -91,7 +92,7 @@ export default function LoginForm({
         />
         <InputField
           type="password"
-          placeholder="Mật Khẩu"
+          placeholder={t.auth.passwordPlaceholder}
           rightIcon={<IoLockClosedOutline />}
           name="password"
           value={password}
@@ -107,14 +108,14 @@ export default function LoginForm({
             onChange={(e) => setRemember(e.target.checked)}
             className="w-4 h-4 rounded accent-[#17409A]"
           />
-          Ghi nhớ đăng nhập
+          {t.auth.rememberMe}
         </label>
         <button
           type="button"
           onClick={onSwitchForgot}
           className="text-sm text-[#17409A] font-bold hover:underline underline-offset-2"
         >
-          Quên mật khẩu?
+          {t.auth.forgotPassword}
         </button>
       </div>
 
@@ -124,25 +125,25 @@ export default function LoginForm({
           disabled={loading}
           className="w-full bg-[#17409A] text-white font-bold py-4 rounded-2xl hover:bg-[#0E2A66] transition-colors duration-200 shadow-lg shadow-[#17409A]/20 text-base disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {loading ? "Đang đăng nhập..." : "Đăng nhập ngay"}
+          {loading ? t.auth.loggingIn : t.auth.loginBtn}
         </button>
       </div>
 
       <div className="field-item mt-5">
         <SocialButtons
-          label="đăng nhập"
+          label={locale === "vi" ? "đăng nhập" : "log in"}
           onGoogleProfileRequired={onSwitchRegister}
         />
       </div>
 
       <div className="field-item text-center text-sm text-[#6B7280] mt-4">
-        Chưa có tài khoản?{" "}
+        {t.auth.noAccount}{" "}
         <button
           type="button"
           onClick={onSwitchRegister}
           className="text-[#17409A] font-bold hover:underline underline-offset-2"
         >
-          Đăng ký ngay
+          {t.auth.registerBtn}
         </button>
       </div>
     </form>

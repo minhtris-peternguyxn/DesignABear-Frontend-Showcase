@@ -1,5 +1,7 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 interface StoryChapterProgressProps {
   chapters: { id: string; label: string; short: string }[];
   activeId: string;
@@ -9,11 +11,13 @@ export default function StoryChapterProgress({
   chapters,
   activeId,
 }: StoryChapterProgressProps) {
+  const { locale } = useLanguage();
+
   return (
     <aside className="hidden xl:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col gap-2.5">
       <div className="rounded-2xl border border-[#E5E7EB] bg-white/90 backdrop-blur-sm p-3 shadow-lg">
         <p className="text-[10px] uppercase tracking-[0.18em] font-bold text-[#9CA3AF] mb-2">
-          Chương truyện
+          {locale === "vi" ? "Chương truyện" : "Chapters"}
         </p>
 
         <div className="flex flex-col gap-1.5">

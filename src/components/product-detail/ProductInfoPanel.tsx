@@ -138,21 +138,13 @@ function IconReturn() {
   );
 }
 
-function formatPrice(price: number | null | undefined): string {
-  return (price ?? 0).toLocaleString("vi-VN") + " đ";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+function formatPrice(price: number | null | undefined, locale: string, currencySymbol: string): string {
+  const formatted = (price ?? 0).toLocaleString(locale === "vi" ? "vi-VN" : "en-US");
+  return locale === "vi" ? `${formatted} ${currencySymbol}` : `${currencySymbol}${formatted}`;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  complete: "Gấu thông minh",
-  bear: "Gấu bông",
-  accessory: "Phụ kiện",
-};
-
-const DELIVERY_INFO = [
-  { icon: <IconTruck />, label: "Giao hàng", value: "Miễn phí" },
-  { icon: <IconShield />, label: "Bảo hành", value: "12 tháng" },
-  { icon: <IconReturn />, label: "Đổi trả", value: "30 ngày" },
-];
 
 interface Props {
   product: ProductItem;
@@ -172,6 +164,7 @@ export default function ProductInfoPanel({
   selectedAccessories,
   setSelectedAccessories,
 }: Props) {
+  const { locale, t } = useLanguage();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const { addItem } = useCart();
@@ -207,8 +200,8 @@ export default function ProductInfoPanel({
 
   const currentAvailable = useMemo(() => {
     let avail = selectedVariant
-      ? (selectedVariant.available ?? 0)
-      : (product.available ?? 0);
+        ? (selectedVariant.available ?? 0)
+        : (product.available ?? 0);
 
     const varId = selectedVariant?.variantId || product.id;
     avail -= sessionDeductions[varId] || 0;
@@ -256,7 +249,7 @@ export default function ProductInfoPanel({
 
   const addToCartInternal = async (goCheckout: boolean) => {
     if (!isAuthenticated) {
-      warning("Vui lòng đăng nhập để thực hiện chức năng này");
+      warning(t.productDetail.toasts.loginRequired);
       setTimeout(() => {
         router.push("/auth");
       }, 1500);
@@ -297,8 +290,8 @@ export default function ProductInfoPanel({
         const buildRes = await buildService.createBuild({
           customerId,
           baseProductId: productId,
-          buildName: `Thiết kế ${product.name}`,
-          personalizationNote: "Mua kèm phụ kiện",
+          buildName: locale === "vi" ? `Thiết kế ${product.name}` : `Custom ${product.name}`,
+          personalizationNote: locale === "vi" ? "Mua kèm phụ kiện" : "Add-on accessories",
           includesSmartChip: hasAiProcessor,
         });
 
@@ -314,7 +307,7 @@ export default function ProductInfoPanel({
           name: itemName,
           description:
             selectedAccessories.length > 0
-              ? `Combo Gấu + ${selectedAccessories.length} Phụ kiện`
+              ? (locale === "vi" ? `Combo Gấu + ${selectedAccessories.length} Phụ kiện` : `Combo Bear + ${selectedAccessories.length} Accessories`)
               : product.description,
           price: currentTotalPrice, // Snap to the combo price!
           image: product.image || "/teddy_bear.png",
@@ -350,16 +343,16 @@ export default function ProductInfoPanel({
 
       if (goCheckout) {
         success(
-          `Đã thêm "${product.name}" vào giỏ. Đang chuyển đến thanh toán...`,
+          t.productDetail.toasts.addedAndRedirecting.replace("{name}", product.name),
         );
         router.push("/checkout");
       } else {
-        success(`Đã thêm "${product.name}" vào giỏ hàng!`);
+        success(t.productDetail.toasts.addedSuccess.replace("{name}", product.name));
       }
     } catch (err) {
       error(
-        "Thêm vào giỏ hàng thất bại: " +
-          (err instanceof Error ? err.message : "Vui lòng thử lại"),
+        t.productDetail.toasts.addedFailed +
+          (err instanceof Error ? err.message : t.productDetail.toasts.tryAgain),
       );
     } finally {
       setAddingToCart(false);
@@ -370,19 +363,25 @@ export default function ProductInfoPanel({
     await addToCartInternal(false);
   };
 
+  const translatedDeliveryInfo = [
+    { icon: <IconTruck />, label: t.productDetail.delivery, value: t.productDetail.deliveryFree },
+    { icon: <IconShield />, label: t.productDetail.warranty, value: t.productDetail.warrantyPeriod },
+    { icon: <IconReturn />, label: t.productDetail.return, value: t.productDetail.returnPeriod },
+  ];
+
   return (
     <div className="space-y-8" style={{ fontFamily: "'Nunito', sans-serif" }}>
       {/* ── Breadcrumb ── */}
       <nav className="flex items-center gap-2 text-sm text-[#6B7280]">
         <Link href="/" className="hover:text-[#17409A] transition-colors">
-          Trang chủ
+          {t.productDetail.breadcrumbHome}
         </Link>
         <span>/</span>
         <Link
           href="/products"
           className="hover:text-[#17409A] transition-colors"
         >
-          Sản phẩm
+          {t.productDetail.breadcrumbProducts}
         </Link>
         <span>/</span>
         <span className="text-[#1A1A2E] font-medium truncate max-w-40">
@@ -394,7 +393,7 @@ export default function ProductInfoPanel({
       {selectedVariant && (
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-black uppercase tracking-widest text-[#9CA3AF]">
-            Khối lượng dự kiến:
+            {t.productDetail.expectedWeight}
           </span>
           <span className="text-xs font-black text-[#1A1A2E]">
             {selectedVariant.weightGram}g
@@ -405,13 +404,13 @@ export default function ProductInfoPanel({
       {/* ── Price (FIRST — unconventional luxury placement) ── */}
       <div>
         <p className="text-xs font-bold tracking-[0.3em] uppercase text-[#9CA3AF] mb-2">
-          Giá bán lẻ
+          {t.productDetail.retailPrice}
         </p>
         <p
           className="text-6xl md:text-7xl font-black leading-none transition-all duration-300"
           style={{ color: accent }}
         >
-          {formatPrice(currentTotalPrice)}
+          {formatPrice(currentTotalPrice, locale, t.productDetail.currencySymbol)}
         </p>
       </div>
 
@@ -434,7 +433,7 @@ export default function ProductInfoPanel({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs font-black tracking-[0.2em] uppercase text-[#1A1A2E]">
-              Chọn kích thước
+              {t.productDetail.chooseSize}
             </p>
             {selectedVariant && (
               <span className="text-[10px] font-bold text-[#6B7280]">
@@ -466,7 +465,7 @@ export default function ProductInfoPanel({
                     {v.sizeTag}
                   </span>
                   <span className="text-[9px] font-bold text-[#9CA3AF] mt-0.5">
-                    {formatPrice(v.price)}
+                    {formatPrice(v.price, locale, t.productDetail.currencySymbol)}
                   </span>
                   {!outOfStock && isSelected && (
                     <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-[#17409A]" />
@@ -482,7 +481,7 @@ export default function ProductInfoPanel({
       {personalizationRules.length > 0 && (
         <div className="space-y-3">
           <p className="font-bold text-[#1A1A2E]">
-            Phụ kiện mua kèm (Tùy chọn):
+            {t.productDetail.optionalAccessories}
           </p>
           <div className="space-y-2">
             {personalizationRules.map((rule) => {
@@ -546,18 +545,18 @@ export default function ProductInfoPanel({
                           const accAvail = Math.max(0, (rule.addonProduct.available ?? 0) - (sessionDeductions[accId] || 0));
                           return accAvail > 0 ? (
                             <span className="text-[10px] font-bold text-[#059669] bg-green-50 px-2 py-0.5 rounded-md border border-green-100">
-                              Còn {accAvail} sản phẩm
+                              {t.productDetail.inStockCount.replace("{count}", accAvail.toString())}
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold text-[#FF6B9D] bg-red-50 px-2 py-0.5 rounded-md border border-red-100">
-                              Hết hàng
+                              {t.productDetail.outOfStock}
                             </span>
                           );
                         })()}
                       </div>
                     </div>
                     <span className="font-bold text-sm text-[#1A1A2E]">
-                      + {formatPrice(rule.addonProduct.price)}
+                      + {formatPrice(rule.addonProduct.price, locale, t.productDetail.currencySymbol)}
                     </span>
                   </button>
 
@@ -569,25 +568,18 @@ export default function ProductInfoPanel({
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Tính năng AI Processor
+                        {t.productDetail.aiFeaturesTitle}
                       </p>
                       <ul className="text-sm text-[#6B7280] space-y-1.5 font-medium" style={{ fontFamily: "'Nunito', sans-serif" }}>
-                        <li className="flex items-start gap-2">
-                          <span className="text-[#FF8C42] text-xs mt-0.5">•</span>
-                          Trò chuyện AI hai chiều tự nhiên với bé.
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-[#4ECDC4] text-xs mt-0.5">•</span>
-                          Hát ru, kể chuyện cổ tích.
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-[#7C5CFC] text-xs mt-0.5">•</span>
-                          Hỗ trợ học tiếng Anh và giải đáp câu hỏi.
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="text-[#FF6B9D] text-xs mt-0.5">•</span>
-                          Ba mẹ gửi tin nhắn thoại từ xa qua điện thoại.
-                        </li>
+                        {t.productDetail.aiFeatures.map((feat, index) => {
+                          const bulletColors = ["#FF8C42", "#4ECDC4", "#7C5CFC", "#FF6B9D"];
+                          return (
+                            <li key={index} className="flex items-start gap-2">
+                              <span className="text-xs mt-0.5" style={{ color: bulletColors[index % bulletColors.length] }}>•</span>
+                              {feat}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -614,15 +606,15 @@ export default function ProductInfoPanel({
           </span>
         )}
         <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#17409A]/10 text-[#17409A] tracking-wide">
-          {CATEGORY_LABELS[product.category] || product.category}
+          {t.productDetail.categoryLabels[product.category as keyof typeof t.productDetail.categoryLabels] || product.category}
         </span>
         {currentAvailable > 0 ? (
           <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#4ECDC4]/20 text-[#059669] tracking-wide border border-[#4ECDC4]/30">
-            Sẵn có: {currentAvailable} sản phẩm
+            {t.productDetail.availableStock.replace("{count}", currentAvailable.toString())}
           </span>
         ) : (
           <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#FF6B9D]/15 text-[#FF6B9D] tracking-wide border border-[#FF6B9D]/30">
-            Hết hàng
+            {t.productDetail.outOfStock}
           </span>
         )}
       </div>
@@ -632,7 +624,7 @@ export default function ProductInfoPanel({
           {product.categories && product.categories.length > 0 && (
             <div>
               <p className="text-xs font-black tracking-[0.2em] uppercase text-[#9CA3AF] mb-2">
-                Danh mục
+                {t.productDetail.categories}
               </p>
               <div className="flex flex-wrap gap-2">
                 {product.categories.map((categoryName) => (
@@ -650,7 +642,7 @@ export default function ProductInfoPanel({
           {product.characters && product.characters.length > 0 && (
             <div>
               <p className="text-xs font-black tracking-[0.2em] uppercase text-[#9CA3AF] mb-2">
-                Tính cách
+                {t.productDetail.characters}
               </p>
               <div className="flex flex-wrap gap-2">
                 {product.characters.map((characterName) => (
@@ -679,7 +671,7 @@ export default function ProductInfoPanel({
         }
       >
         <p className="text-xs font-black tracking-[0.25em] uppercase text-[#1A1A2E] mb-3">
-          Số lượng
+          {t.productDetail.quantity}
         </p>
         <div className="flex items-center w-fit border-2 border-[#E5E7EB] rounded-2xl overflow-hidden">
           <button
@@ -691,7 +683,7 @@ export default function ProductInfoPanel({
                 ? "opacity-30 cursor-not-allowed"
                 : ""
             }`}
-            aria-label="Giảm số lượng"
+            aria-label={locale === "vi" ? "Giảm số lượng" : "Decrease quantity"}
           >
             <IconMinus />
           </button>
@@ -712,19 +704,19 @@ export default function ProductInfoPanel({
                 ? "opacity-30 cursor-not-allowed"
                 : ""
             }`}
-            aria-label="Tăng số lượng"
+            aria-label={locale === "vi" ? "Tăng số lượng" : "Increase quantity"}
           >
             <IconPlus />
           </button>
         </div>
         {currentAvailable > 0 && currentAvailable < 5 && (
           <p className="mt-2 text-xs font-bold" style={{ color: "#FF8C42" }}>
-            Chỉ còn {currentAvailable} sản phẩm cuối cùng!
+            {t.productDetail.lastItemsAlert.replace("{count}", currentAvailable.toString())}
           </p>
         )}
         {currentAvailable <= 0 && (
           <p className="mt-2 text-xs font-bold text-[#FF6B9D]">
-            Sản phẩm hiện đang tạm hết hàng.
+            {t.productDetail.outOfStockAlert}
           </p>
         )}
       </div>
@@ -733,7 +725,7 @@ export default function ProductInfoPanel({
       <div className="flex flex-col sm:flex-row gap-4">
         {currentAvailable <= 0 ? (
           <div className="flex-1 bg-gray-100 text-gray-500 py-4 px-8 rounded-2xl font-black text-center uppercase tracking-widest border-2 border-dashed border-gray-200">
-            Sản phẩm tạm hết hàng
+            {t.productDetail.outOfStockCta}
           </div>
         ) : (
           <>
@@ -744,7 +736,7 @@ export default function ProductInfoPanel({
               className="flex-1 py-4 px-8 rounded-2xl text-white font-black text-base tracking-wide shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               style={{ backgroundColor: accent }}
             >
-              {addingToCart ? "Đang xử lý..." : "Mua ngay"}
+              {addingToCart ? t.productDetail.processing : t.productDetail.buyNow}
             </button>
             <button
               type="button"
@@ -753,7 +745,7 @@ export default function ProductInfoPanel({
               className="flex-1 py-4 px-8 rounded-2xl font-black text-base tracking-wide border-2 border-[#17409A] text-[#17409A] hover:bg-[#17409A] hover:text-white transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <IconCart />
-              {addingToCart ? "Đang thêm..." : "Thêm vào giỏ"}
+              {addingToCart ? t.productDetail.adding : t.productDetail.addToCart}
             </button>
           </>
         )}
@@ -766,7 +758,7 @@ export default function ProductInfoPanel({
               ? "bg-[#FF6B9D] text-white border-[#FF6B9D]"
               : "border-[#E5E7EB] text-[#FF6B9D] hover:bg-[#FF6B9D] hover:text-white hover:border-[#FF6B9D]"
           } ${favoriteLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-          aria-label="Yêu thích"
+          aria-label={locale === "vi" ? "Yêu thích" : "Favorite"}
         >
           <IconHeart filled={favorited} />
         </button>
@@ -774,7 +766,7 @@ export default function ProductInfoPanel({
 
       {/* ── Delivery / Warranty info ── */}
       <div className="grid grid-cols-3 gap-3 pt-1">
-        {DELIVERY_INFO.map(({ icon, label, value }) => (
+        {translatedDeliveryInfo.map(({ icon, label, value }) => (
           <div
             key={label}
             className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-white border border-[#E5E7EB] text-center shadow-sm"

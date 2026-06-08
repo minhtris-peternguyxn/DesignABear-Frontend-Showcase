@@ -7,6 +7,7 @@ import {
 } from "react-icons/io5";
 import type { DeliveryForm } from "./checkout.types";
 import { PAYMENT_OPTIONS } from "./checkout.atoms";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function StepConfirm({
   form,
@@ -19,7 +20,24 @@ export function StepConfirm({
   agreed: boolean;
   setAgreed: (v: boolean) => void;
 }) {
+  const { locale, t } = useLanguage();
   const payOpt = PAYMENT_OPTIONS.find((p) => p.id === method)!;
+
+  const payOptLabel = payOpt.id === "cod"
+    ? t.checkout.payment.codTitle
+    : payOpt.id === "bank"
+      ? t.checkout.payment.bankTitle
+      : payOpt.id === "momo"
+        ? (locale === "vi" ? "Ví MoMo" : "MoMo Wallet")
+        : (locale === "vi" ? "VNPay QR" : "VNPay QR");
+
+  const payOptBrief = payOpt.id === "cod"
+    ? t.checkout.payment.codDesc
+    : payOpt.id === "bank"
+      ? t.checkout.payment.bankDesc
+      : locale === "vi"
+        ? "Đang phát triển"
+        : "Under development";
 
   return (
     <div className="space-y-5 relative">
@@ -51,12 +69,12 @@ export function StepConfirm({
           <div>
             <h2
               className="text-xl font-black"
-              style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
+              style={{ color: "#1A1A2E", fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Xác nhận đơn hàng
+              {t.checkout.confirm.title}
             </h2>
             <p className="text-xs" style={{ color: "#9CA3AF" }}>
-              Kiểm tra lại thông tin trước khi đặt nhé!
+              {t.checkout.confirm.subtitle}
             </p>
           </div>
         </div>
@@ -72,17 +90,17 @@ export function StepConfirm({
               className="text-sm font-black"
               style={{ color: "#17409A", fontFamily: "'Nunito', sans-serif" }}
             >
-              Địa chỉ giao hàng
+              {t.checkout.confirm.shippingAddress}
             </p>
           </div>
           <div className="space-y-1">
             {(
               [
-                ["Người nhận", form.name || "—"],
-                ["Điện thoại", form.phone || "—"],
+                [locale === "vi" ? "Người nhận" : "Receiver", form.name || "—"],
+                [t.checkout.confirm.phoneLabel, form.phone || "—"],
                 ["Email", form.email || "—"],
                 [
-                  "Địa chỉ",
+                  t.checkout.confirm.addressLabel,
                   [
                     form.address,
                     form.wardName,
@@ -92,7 +110,7 @@ export function StepConfirm({
                     .filter(Boolean)
                     .join(", ") || "—",
                 ],
-                ...(form.note ? [["Ghi chú", form.note]] : []),
+                ...(form.note ? [[t.checkout.confirm.noteLabel, form.note]] : []),
               ] as [string, string][]
             ).map(([k, v]) => (
               <div key={k} className="flex gap-2">
@@ -139,10 +157,10 @@ export function StepConfirm({
                   fontFamily: "'Nunito', sans-serif",
                 }}
               >
-                {payOpt.label}
+                {payOptLabel}
               </p>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                {payOpt.brief}
+                {payOptBrief}
               </p>
             </div>
           </div>
@@ -161,15 +179,15 @@ export function StepConfirm({
             {agreed && <IoCheckmark className="text-white text-xs" />}
           </div>
           <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
-            Tôi đồng ý với{" "}
+            {t.checkout.confirm.agreement1}{" "}
             <span style={{ color: "#17409A" }} className="font-bold">
-              Điều khoản dịch vụ
+              {t.checkout.confirm.agreementTerms}
             </span>{" "}
-            và{" "}
+            {t.checkout.confirm.agreement2}{" "}
             <span style={{ color: "#17409A" }} className="font-bold">
-              Chính sách bảo mật
+              {t.checkout.confirm.agreementPrivacy}
             </span>{" "}
-            của Design a Bear.
+            {t.checkout.confirm.agreement3}
           </p>
         </label>
       </div>

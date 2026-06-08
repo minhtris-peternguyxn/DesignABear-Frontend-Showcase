@@ -6,6 +6,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ProductCard, {
   type ProductCardProps,
 } from "@/components/shared/ProductCard";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -14,14 +15,15 @@ interface ProductsGridProps {
 }
 
 function EmptyState() {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <div className="text-7xl mb-4 select-none opacity-30">🐻</div>
       <h3 className="text-[#1A1A2E] font-black text-xl mb-2">
-        Không tìm thấy sản phẩm
+        {t.products.grid.noProducts}
       </h3>
       <p className="text-[#6B7280] text-sm max-w-xs">
-        Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm để xem thêm sản phẩm.
+        {t.products.grid.tryChangingFilters}
       </p>
     </div>
   );
@@ -54,12 +56,14 @@ export default function ProductsGrid({ products }: ProductsGridProps) {
     );
   }, [products]);
 
+  const { t } = useLanguage();
+
   return (
     <section className="bg-[#F4F7FF] flex-1 py-10 md:py-14">
       <div className="max-w-screen-2xl mx-auto px-4 md:px-16">
         {/* Mobile product count */}
         <p className="text-[#6B7280] text-sm font-semibold mb-6 lg:hidden">
-          {products.length} sản phẩm
+          {products.length} {t.products.filter.productCount}
         </p>
 
         {products.length === 0 ? (

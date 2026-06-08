@@ -10,6 +10,7 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import { PawPrint, fmt } from "./checkout.atoms";
 import { FREE_SHIP } from "./checkout.config";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AppliedCoupon {
   code: string;
@@ -46,6 +47,7 @@ export function OrderSummary({
   stockErrors = {},
 }: OrderSummaryProps) {
   const { items, totalItems, totalPrice } = useCart();
+  const { locale, t } = useLanguage();
   // const freeShip = totalPrice >= FREE_SHIP;
   // const barWidth = Math.min((totalPrice / FREE_SHIP) * 100, 100);
 
@@ -66,11 +68,11 @@ export function OrderSummary({
         <div className="flex items-center gap-2.5 mb-1">
           <PawPrint color="#17409A" size={18} />
           <h3 className="text-lg font-black" style={{ color: "#1A1A2E" }}>
-            Đơn hàng của bạn
+            {t.checkout.summary.title}
           </h3>
         </div>
         <p className="text-xs" style={{ color: "#9CA3AF" }}>
-          {totalItems} sản phẩm · {fmt(totalPrice)}
+          {t.checkout.summary.itemsCount.replace("{count}", String(totalItems))} · {fmt(totalPrice)}
         </p>
       </div>
 
@@ -223,7 +225,7 @@ export function OrderSummary({
           <input
             value={couponInput}
             onChange={(e) => onCouponInputChange(e.target.value.toUpperCase())}
-            placeholder="Mã giảm giá"
+            placeholder={t.checkout.payment.couponPlaceholder}
             className="flex-1 text-sm bg-transparent outline-none"
             style={{ color: "#1A1A2E", fontFamily: "'Nunito', sans-serif" }}
             onKeyDown={(e) => {
@@ -238,7 +240,7 @@ export function OrderSummary({
               className="text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-200 hover:scale-105 shrink-0"
               style={{ backgroundColor: "#17409A", color: "white" }}
             >
-              Thêm
+              {t.checkout.summary.add}
             </button>
           )}
         </div>
@@ -256,7 +258,7 @@ export function OrderSummary({
               <div className="flex items-center gap-2">
                 <IoGiftOutline style={{ color: "#4ECDC4" }} />
                 <p className="text-xs font-bold" style={{ color: "#4ECDC4" }}>
-                  <b>{c.code}</b> — Giảm {fmt(c.totalDiscount)}
+                  <b>{c.code}</b> — {t.checkout.summary.discount} {fmt(c.totalDiscount)}
                 </p>
               </div>
               <button
@@ -277,16 +279,16 @@ export function OrderSummary({
       >
         <div className="space-y-2.5 mb-4">
           {[
-            ["Tạm tính", fmt(totalPrice)],
+            [t.checkout.summary.cartTotal, fmt(totalPrice)],
             [
-              "Phí vận chuyển",
+              t.checkout.summary.shipping,
               isCalculatingShipping
-                ? "Đang tính..."
+                ? t.checkout.summary.calculating
                 : shippingFee === 0
-                  ? "Miễn phí"
+                  ? t.checkout.summary.shippingFree
                   : fmt(shippingFee),
             ],
-            ...(discount > 0 ? [["Giảm giá", `−${fmt(discount)}`]] : []),
+            ...(discount > 0 ? [[t.checkout.summary.discount, `−${fmt(discount)}`]] : []),
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between">
               <span className="text-xs" style={{ color: "#6B7280" }}>
@@ -294,7 +296,7 @@ export function OrderSummary({
               </span>
               <span
                 className="text-xs font-bold"
-                style={{ color: k === "Giảm giá" ? "#4ECDC4" : "#374151" }}
+                style={{ color: k === t.checkout.summary.discount ? "#4ECDC4" : "#374151" }}
               >
                 {v}
               </span>
@@ -311,14 +313,14 @@ export function OrderSummary({
 
         <div className="flex justify-between items-end mb-1">
           <span className="text-sm font-bold" style={{ color: "#6B7280" }}>
-            Tổng cộng
+            {t.checkout.summary.total}
           </span>
           <span className="text-2xl font-black" style={{ color: "#17409A" }}>
             {fmt(finalTotal)}
           </span>
         </div>
         <p className="text-xs text-right" style={{ color: "#9CA3AF" }}>
-          Đã bao gồm VAT
+          {t.checkout.summary.vatIncluded}
         </p>
 
         {/* Trust badges */}
@@ -327,9 +329,9 @@ export function OrderSummary({
           style={{ borderTop: "1px solid #F3F4F6" }}
         >
           {[
-            { icon: IoShieldCheckmarkOutline, label: "An toàn" },
-            { icon: IoLockClosedOutline, label: "Bảo mật" },
-            { icon: IoGiftOutline, label: "Đổi trả 30 ngày" },
+            { icon: IoShieldCheckmarkOutline, label: locale === "vi" ? "An toàn" : "Safe" },
+            { icon: IoLockClosedOutline, label: locale === "vi" ? "Bảo mật" : "Secure" },
+            { icon: IoGiftOutline, label: locale === "vi" ? "Đổi trả 30 ngày" : "30-day returns" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1">
               <Icon className="text-[11px]" style={{ color: "#9CA3AF" }} />

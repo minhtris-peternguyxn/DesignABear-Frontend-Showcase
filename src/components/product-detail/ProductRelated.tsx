@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { type ProductItem } from "@/types/products";
 import ProductCard from "@/components/shared/ProductCard";
 
@@ -38,6 +39,8 @@ export default function ProductRelated({ products }: Props) {
     return () => ctx.revert();
   }, []);
 
+  const { t } = useLanguage();
+
   return (
     <section
       ref={sectionRef}
@@ -49,20 +52,20 @@ export default function ProductRelated({ products }: Props) {
         <div className="flex items-end justify-between gap-6 mb-12 flex-wrap">
           <div>
             <p className="text-xs font-black tracking-[0.35em] uppercase text-[#17409A] mb-3">
-              Khám phá thêm
+              {t.productDetail.related.sectionTitle}
             </p>
             <h2
               className="text-4xl font-black text-[#1A1A2E]"
               style={{ fontFamily: "'Fredoka', 'Nunito', sans-serif" }}
             >
-              Có thể bạn thích
+              {t.productDetail.related.sectionHeading}
             </h2>
           </div>
           <a
             href="/products"
             className="text-sm font-black text-[#17409A] hover:text-[#0E2A66] transition-colors tracking-wide uppercase"
           >
-            Xem tất cả →
+            {t.productDetail.related.viewAll}
           </a>
         </div>
 
