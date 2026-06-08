@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import InputField from "./InputField";
 import SocialButtons from "./SocialButtons";
-import { IoMailOutline, IoLockClosedOutline } from "react-icons/io5";
+import { IoMailOutline, IoLockClosedOutline, IoKeyOutline } from "react-icons/io5";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/contexts/ToastContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -27,6 +27,7 @@ export default function LoginForm({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,11 +150,30 @@ export default function LoginForm({
         </button>
       </div>
 
+      {/* Demo Accounts inline trigger button */}
+      <div className="field-item flex justify-center mt-3">
+        <button
+          type="button"
+          onClick={() => setDemoOpen(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-full shadow-md shadow-amber-500/20 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer text-sm"
+        >
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+          </span>
+          <IoKeyOutline className="w-4 h-4" />
+          <span className="font-fredoka">{locale === "vi" ? "Tài khoản Demo" : "Demo Accounts"}</span>
+        </button>
+      </div>
+
     </form>
-    <DemoAccountsPopup 
-      onAutofill={(email, password) => {
-        setEmail(email);
-        setPassword(password);
+    <DemoAccountsPopup
+      isOpen={demoOpen}
+      onClose={() => setDemoOpen(false)}
+      onAutofill={(demoEmail, demoPassword) => {
+        setEmail(demoEmail);
+        setPassword(demoPassword);
+        setDemoOpen(false);
       }} 
     />
     </>

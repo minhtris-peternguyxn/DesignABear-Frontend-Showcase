@@ -17,6 +17,8 @@ import {
 } from "react-icons/io5";
 
 interface DemoAccountsPopupProps {
+  isOpen: boolean;
+  onClose: () => void;
   onAutofill: (email: string, password: string) => void;
 }
 
@@ -98,9 +100,8 @@ const demoAccounts = [
   },
 ];
 
-export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps) {
+export default function DemoAccountsPopup({ isOpen, onClose, onAutofill }: DemoAccountsPopupProps) {
   const { locale, setLocale } = useLanguage();
-  const [isOpen, setIsOpen] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -119,7 +120,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsOpen(false);
+      if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
@@ -158,7 +159,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
 
   const handleAutofillAction = (email: string, pass: string) => {
     onAutofill(email, pass);
-    setIsOpen(false);
+    onClose();
   };
 
   const toggleLanguage = () => {
@@ -168,7 +169,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
   const modalContent = isOpen ? (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md"
-      onClick={() => setIsOpen(false)}
+      onClick={onClose}
     >
       <div
         className="relative w-full max-w-lg bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/60 rounded-3xl shadow-2xl shadow-black/30 overflow-hidden flex flex-col max-h-[90vh]"
@@ -188,7 +189,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
               
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <IoCloseOutline className="w-6 h-6" />
@@ -355,7 +356,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
             <div className="border-t border-gray-100 dark:border-slate-800/80 px-6 py-4 flex justify-end">
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="px-5 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 font-bold rounded-2xl hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
               >
                 {t.closeBtn}
@@ -366,24 +367,7 @@ export default function DemoAccountsPopup({ onAutofill }: DemoAccountsPopupProps
     </div>
   ) : null;
 
-  return (
-    <>
-      {/* Floating Action Button (FAB) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-[#17409A] to-[#3B82F6] text-white font-bold rounded-full shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 cursor-pointer group"
-      >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-        </span>
-        <IoKeyOutline className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-        <span className="text-sm tracking-wide font-fredoka">{t.floatingBtn}</span>
-      </button>
-
-      {/* Portal modal to document.body to escape all stacking contexts */}
-      {mounted && createPortal(modalContent, document.body)}
-    </>
-  );
+  // Only render portal modal — no FAB trigger button
+  if (!mounted) return null;
+  return createPortal(modalContent, document.body);
 }
